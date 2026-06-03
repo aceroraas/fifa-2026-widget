@@ -932,7 +932,7 @@
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         if (data.events && data.events.length > 0) {
-          this._mezclarDesdeTheSportsDB(data.events);
+          await this._mezclarDesdeTheSportsDB(data.events);
           this._apiOk = true;
           if (statusEl) {
             statusEl.textContent = 'Datos en vivo activos';
@@ -949,8 +949,8 @@
       this._programarConsultasAPI();
     }
 
-    _mezclarDesdeTheSportsDB(eventosAPI) {
-      eventosAPI.forEach(evt => {
+    async _mezclarDesdeTheSportsDB(eventosAPI) {
+      for (const evt of eventosAPI) {
         // Mapear nombres de la API a nombres estáticos
         const localAPI = evt.strHomeTeam || evt.homeTeam || '';
         const visitanteAPI = evt.strAwayTeam || evt.awayTeam || '';
@@ -963,7 +963,7 @@
           (p.local === visitante && p.visitante === local)
         );
 
-        if (!partido) return;
+        if (!partido) continue;
 
         // Actualizar estado
         const strStatus = evt.strStatus || '';
@@ -985,7 +985,15 @@
         if (partido.estado === 'en-vivo' && evt.strProgress) {
           partido.minuto = evt.strProgress;
         }
-      });
+
+        // Fetch timeline for live matches
+        if (partido.estado === 'en-vivo' && evt.idEvent) {
+          const timeline = await this._cargarTimeline(evt.idEvent);
+          if (timeline) {
+            partido.eventos = this._parsearTimeline(timeline, partido);
+          }
+        }
+      }
 
       // Recalcular posiciones basado en resultados
       this._recalcularPosiciones();
@@ -1410,29 +1418,65 @@
     }
 
     // ═══════════════════════════════════════════════════════════
-    // PARSEAR EVENTOS (API custom — TheSportsDB no los incluye)
-    // Formato esperado: "45';Lozano;Assist:Herrera~67';Jiménez"
+    // CARGAR + PARSEAR TIMELINE (reemplaza a _parsearDetallesGoles)
+    // TheSportsDB lookuptimeline.php?id={idEvent} devuelve:
+    // { timeline: [{ strTimeline, strPlayer, strAssist, intTime, strTeam, strTimelineDetail }] }
     // ═══════════════════════════════════════════════════════════
-    _parsearDetallesGoles(detalle, equipo) {
-      if (!detalle || detalle.trim() === '') return [];
 
-      return detalle.split('~').map(gol => {
-        const partes = gol.split(';');
-        const minuto = (partes[0] || '').replace(/[^0-9]/g, '');
-        const jugador = partes[1] || '';
-        const asistenciaParte = partes[2] || '';
-        const asistencia = asistenciaParte.startsWith('Assist:')
-          ? asistenciaParte.replace('Assist:', '').trim()
-          : null;
+    async _cargarTimeline(idEvent) {
+      try {
+        const res = await fetch(API_THE_SPORTS_DB.base + '/lookuptimeline.php?id=' + idEvent);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.timeline || null;
+      } catch (e) {
+        console.warn('[FIFA Widget] Timeline no disponible:', e.message);
+        return null;
+      }
+    }
 
-        return {
-          minuto: minuto,
-          tipo: 'gol',
-          jugador: jugador,
-          asistencia: asistencia,
-          equipo: equipo
-        };
-      }).filter(ev => ev.minuto && ev.jugador);
+    _parsearTimeline(timeline, partido) {
+      if (!Array.isArray(timeline)) return [];
+
+      return timeline.map(entry => {
+        const type = entry.strTimeline;
+        // Mapear nombre del equipo a español y emparejar contra partido
+        const teamEN = entry.strTeam || '';
+        const teamES = MAPA_EQUIPOS[teamEN] || teamEN;
+        const equipo = (teamES === partido.local) ? partido.local :
+                       (teamES === partido.visitante) ? partido.visitante :
+                       teamES;
+
+        switch (type) {
+          case 'Goal':
+            return {
+              tipo: 'gol',
+              minuto: String(entry.intTime || ''),
+              jugador: entry.strPlayer || '',
+              asistencia: entry.strAssist || null,
+              equipo: equipo
+            };
+          case 'Card': {
+            const isRed = /red/i.test(entry.strTimelineDetail || '');
+            return {
+              tipo: isRed ? 'roja' : 'amarilla',
+              minuto: String(entry.intTime || ''),
+              jugador: entry.strPlayer || '',
+              equipo: equipo
+            };
+          }
+          case 'subst':
+            return {
+              tipo: 'sustitucion',
+              minuto: String(entry.intTime || ''),
+              salio: entry.strPlayer || '',
+              entro: entry.strAssist || '',
+              equipo: equipo
+            };
+          default:
+            return null;
+        }
+      }).filter(Boolean);
     }
 
     // ═══════════════════════════════════════════════════════════

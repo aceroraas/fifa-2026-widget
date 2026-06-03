@@ -604,6 +604,144 @@ describe('Match schedule — dates and venues', () => {
   });
 });
 
+// ── _parsearTimeline (timeline parsing) ──
+describe('_parsearTimeline — parses API timeline to events', () => {
+  // Pure function mirroring component logic
+  function parsearTimeline(timeline, partido) {
+    if (!Array.isArray(timeline)) return [];
+    return timeline.map(entry => {
+      const type = entry.strTimeline;
+      const teamEN = entry.strTeam || '';
+      const teamES = MAPA_EQUIPOS[teamEN] || teamEN;
+      const equipo = (teamES === partido.local) ? partido.local :
+                     (teamES === partido.visitante) ? partido.visitante :
+                     teamES;
+      switch (type) {
+        case 'Goal':
+          return {
+            tipo: 'gol',
+            minuto: String(entry.intTime || ''),
+            jugador: entry.strPlayer || '',
+            asistencia: entry.strAssist || null,
+            equipo: equipo
+          };
+        case 'Card': {
+          const isRed = /red/i.test(entry.strTimelineDetail || '');
+          return {
+            tipo: isRed ? 'roja' : 'amarilla',
+            minuto: String(entry.intTime || ''),
+            jugador: entry.strPlayer || '',
+            equipo: equipo
+          };
+        }
+        case 'subst':
+          return {
+            tipo: 'sustitucion',
+            minuto: String(entry.intTime || ''),
+            salio: entry.strPlayer || '',
+            entro: entry.strAssist || '',
+            equipo: equipo
+          };
+        default:
+          return null;
+      }
+    }).filter(Boolean);
+  }
+
+  const partidoMock = { local: 'México', visitante: 'Sudáfrica' };
+
+  it('parses Goal with scorer and assist', () => {
+    const timeline = [
+      { strTimeline: 'Goal', strPlayer: 'Hirving Lozano', strAssist: 'Héctor Herrera', intTime: 12, strTeam: 'Mexico' }
+    ];
+    const events = parsearTimeline(timeline, partidoMock);
+    assertEqual(events.length, 1);
+    assertEqual(events[0].tipo, 'gol');
+    assertEqual(events[0].jugador, 'Hirving Lozano');
+    assertEqual(events[0].asistencia, 'Héctor Herrera');
+    assertEqual(events[0].minuto, '12');
+    assertEqual(events[0].equipo, 'México');
+  });
+  it('parses Goal without assist', () => {
+    const timeline = [
+      { strTimeline: 'Goal', strPlayer: 'Raúl Jiménez', strAssist: null, intTime: 56, strTeam: 'Mexico' }
+    ];
+    const events = parsearTimeline(timeline, partidoMock);
+    assertEqual(events[0].tipo, 'gol');
+    assertEqual(events[0].asistencia, null);
+  });
+  it('parses yellow Card', () => {
+    const timeline = [
+      { strTimeline: 'Card', strPlayer: 'Siphiwe Tshabalala', strTimelineDetail: 'Foul', intTime: 23, strTeam: 'South Africa' }
+    ];
+    const events = parsearTimeline(timeline, partidoMock);
+    assertEqual(events[0].tipo, 'amarilla');
+    assertEqual(events[0].jugador, 'Siphiwe Tshabalala');
+    assertEqual(events[0].equipo, 'Sudáfrica');
+  });
+  it('parses red Card', () => {
+    const timeline = [
+      { strTimeline: 'Card', strPlayer: 'Edson Álvarez', strTimelineDetail: 'Red Card', intTime: 45, strTeam: 'Mexico' }
+    ];
+    const events = parsearTimeline(timeline, partidoMock);
+    assertEqual(events[0].tipo, 'roja');
+  });
+  it('parses substitution', () => {
+    const timeline = [
+      { strTimeline: 'subst', strPlayer: 'Hirving Lozano', strAssist: 'Uriel Antuna', intTime: 61, strTeam: 'Mexico' }
+    ];
+    const events = parsearTimeline(timeline, partidoMock);
+    assertEqual(events[0].tipo, 'sustitucion');
+    assertEqual(events[0].salio, 'Hirving Lozano');
+    assertEqual(events[0].entro, 'Uriel Antuna');
+  });
+  it('parses mixed events in order', () => {
+    const timeline = [
+      { strTimeline: 'Goal', strPlayer: 'Lozano', strAssist: 'Herrera', intTime: 12, strTeam: 'Mexico' },
+      { strTimeline: 'Card', strPlayer: 'Tshabalala', strTimelineDetail: 'Foul', intTime: 23, strTeam: 'South Africa' },
+      { strTimeline: 'Goal', strPlayer: 'Tau', strAssist: 'Zwane', intTime: 34, strTeam: 'South Africa' },
+      { strTimeline: 'Card', strPlayer: 'Álvarez', strTimelineDetail: 'Red Card', intTime: 45, strTeam: 'Mexico' },
+      { strTimeline: 'subst', strPlayer: 'Lozano', strAssist: 'Antuna', intTime: 61, strTeam: 'Mexico' }
+    ];
+    const events = parsearTimeline(timeline, partidoMock);
+    assertEqual(events.length, 5);
+    assertEqual(events[0].tipo, 'gol');
+    assertEqual(events[1].tipo, 'amarilla');
+    assertEqual(events[2].tipo, 'gol');
+    assertEqual(events[3].tipo, 'roja');
+    assertEqual(events[4].tipo, 'sustitucion');
+  });
+  it('returns empty array for non-array input', () => {
+    assertDeepEqual(parsearTimeline(null, partidoMock), []);
+    assertDeepEqual(parsearTimeline(undefined, partidoMock), []);
+    assertDeepEqual(parsearTimeline('string', partidoMock), []);
+  });
+  it('filters out unknown event types', () => {
+    const timeline = [
+      { strTimeline: 'Goal', strPlayer: 'Lozano', strAssist: null, intTime: 10, strTeam: 'Mexico' },
+      { strTimeline: 'Unknown', strPlayer: 'Someone', intTime: 20, strTeam: 'Mexico' },
+      { strTimeline: 'Goal', strPlayer: 'Tau', strAssist: null, intTime: 30, strTeam: 'South Africa' }
+    ];
+    const events = parsearTimeline(timeline, partidoMock);
+    assertEqual(events.length, 2);
+  });
+  it('handles missing intTime as empty string', () => {
+    const timeline = [
+      { strTimeline: 'Goal', strPlayer: 'Lozano', strAssist: null, strTeam: 'Mexico' }
+    ];
+    const events = parsearTimeline(timeline, partidoMock);
+    assertEqual(events[0].minuto, '');
+  });
+  it('maps English team names to Spanish via MAPA_EQUIPOS', () => {
+    const timeline = [
+      { strTimeline: 'Goal', strPlayer: 'Son', strAssist: null, intTime: 5, strTeam: 'South Korea' }
+    ];
+    const partidoKorea = { local: 'Corea del Sur', visitante: 'Rep. Checa' };
+    const events = parsearTimeline(timeline, partidoKorea);
+    assertEqual(events[0].equipo, 'Corea del Sur');
+  });
+});
+
 // ═══════════════════════════════════════════════════════════
 // SUMMARY
 // ═══════════════════════════════════════════════════════════
