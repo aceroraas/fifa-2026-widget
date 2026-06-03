@@ -563,28 +563,201 @@
       background: rgba(255,255,255,0.05); padding: 0.1rem 0.4rem; border-radius: 3px;
     }
 
-    /* ── Panel: Eliminatorias ── */
-    .panel-eliminatorias { padding: 1rem; }
-    .ronda-llave { margin-bottom: 1rem; }
-    .titulo-ronda {
-      font-size: 0.7rem; font-weight: 600; color: var(--fwc-accent);
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 0.5rem; padding-bottom: 0.3rem;
-      border-bottom: 1px solid rgba(79,195,247,0.2);
+    /* ── Panel: Eliminatorias (Bracket Tree) ── */
+    .panel-eliminatorias {
+      padding: 0.6rem;
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 65vh;
     }
-    .partido-llave {
-      background: rgba(255,255,255,0.03); border: 1px solid var(--fwc-border);
-      border-radius: 8px; padding: 0.5rem 0.7rem; margin-bottom: 0.4rem;
-      display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;
+    .panel-eliminatorias::-webkit-scrollbar { width: 4px; height: 4px; }
+    .panel-eliminatorias::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    .bracket-tree {
+      display: flex;
+      gap: 0;
+      min-width: 680px;
+      position: relative;
     }
-    .partido-llave .equipos-llave { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; }
-    .partido-llave .fila-equipo { display: flex; justify-content: space-between; align-items: center; }
-    .partido-llave .nombre-equipo { color: var(--fwc-text); }
-    .partido-llave .nombre-equipo.ganador { color: var(--fwc-accent); font-weight: 600; }
-    .partido-llave .gol-equipo { color: var(--fwc-text-dim); font-weight: 600; min-width: 15px; text-align: right; }
-    .partido-llave .gol-equipo.ganador { color: var(--fwc-accent); }
-    .partido-llave .hora-partido { font-size: 0.6rem; color: var(--fwc-text-dim); text-align: right; min-width: 60px; }
-    .llave-vacia { text-align: center; padding: 1rem 0; color: var(--fwc-text-dim); font-size: 0.75rem; }
+
+    .bracket-ronda {
+      flex: 0 0 auto;
+      width: 160px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      position: relative;
+      padding: 0 0.3rem;
+    }
+
+    .bracket-ronda:last-child {
+      width: 180px;
+    }
+
+    .bracket-ronda-titulo {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: var(--fwc-accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: center;
+      padding: 0.3rem 0;
+      margin-bottom: 0.3rem;
+      position: sticky;
+      top: 0;
+      background: var(--fwc-bg);
+      z-index: 2;
+    }
+
+    .bracket-partidos {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      flex: 1;
+      gap: 0.3rem;
+    }
+
+    /* Match card */
+    .bracket-match {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--fwc-border);
+      border-radius: 6px;
+      overflow: hidden;
+      transition: all 0.25s ease;
+      animation: bracketFadeIn 0.4s ease both;
+    }
+    .bracket-match:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.15);
+      transform: scale(1.02);
+    }
+
+    .bracket-match.final-match {
+      border-color: rgba(255,215,0,0.3);
+      background: rgba(255,215,0,0.05);
+    }
+    .bracket-match.final-match:hover {
+      border-color: rgba(255,215,0,0.5);
+      background: rgba(255,215,0,0.08);
+    }
+
+    .bracket-equipo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.65rem;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.2s;
+    }
+    .bracket-equipo:last-child { border-bottom: none; }
+
+    .bracket-equipo.ganador {
+      background: rgba(79,195,247,0.08);
+    }
+
+    .bracket-nombre {
+      color: var(--fwc-text);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100px;
+    }
+    .bracket-equipo.ganador .bracket-nombre {
+      color: var(--fwc-accent);
+      font-weight: 700;
+    }
+    .bracket-nombre.placeholder {
+      color: var(--fwc-text-dim);
+      font-style: italic;
+      font-size: 0.6rem;
+    }
+
+    .bracket-goles {
+      color: var(--fwc-text-dim);
+      font-weight: 600;
+      font-size: 0.65rem;
+      min-width: 18px;
+      text-align: right;
+    }
+    .bracket-equipo.ganador .bracket-goles {
+      color: var(--fwc-accent);
+    }
+
+    /* Connector lines between rounds */
+    .bracket-ronda:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(79,195,247,0.15) 10%,
+        rgba(79,195,247,0.15) 90%,
+        transparent 100%
+      );
+    }
+
+    /* Empty state */
+    .llave-vacia {
+      text-align: center;
+      padding: 1.5rem 0.5rem;
+      color: var(--fwc-text-dim);
+      font-size: 0.7rem;
+      line-height: 1.5;
+    }
+    .llave-vacia .icono-fase {
+      font-size: 1.5rem;
+      display: block;
+      margin-bottom: 0.5rem;
+      opacity: 0.5;
+    }
+
+    /* Animations */
+    @keyframes bracketFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bracket-match:nth-child(1) { animation-delay: 0.05s; }
+    .bracket-match:nth-child(2) { animation-delay: 0.1s; }
+    .bracket-match:nth-child(3) { animation-delay: 0.15s; }
+    .bracket-match:nth-child(4) { animation-delay: 0.2s; }
+    .bracket-match:nth-child(5) { animation-delay: 0.25s; }
+    .bracket-match:nth-child(6) { animation-delay: 0.3s; }
+    .bracket-match:nth-child(7) { animation-delay: 0.35s; }
+    .bracket-match:nth-child(8) { animation-delay: 0.4s; }
+    .bracket-match:nth-child(9) { animation-delay: 0.45s; }
+    .bracket-match:nth-child(10) { animation-delay: 0.5s; }
+    .bracket-match:nth-child(11) { animation-delay: 0.55s; }
+    .bracket-match:nth-child(12) { animation-delay: 0.6s; }
+    .bracket-match:nth-child(13) { animation-delay: 0.65s; }
+    .bracket-match:nth-child(14) { animation-delay: 0.7s; }
+    .bracket-match:nth-child(15) { animation-delay: 0.75s; }
+    .bracket-match:nth-child(16) { animation-delay: 0.8s; }
+
+    /* Champion badge */
+    .campeon-badge {
+      text-align: center;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+      background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,215,0,0.03));
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 8px;
+      animation: bracketFadeIn 0.5s ease both;
+      animation-delay: 0.9s;
+    }
+    .campeon-badge .trofeo { font-size: 1.2rem; }
+    .campeon-badge .campeon-nombre {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #ffd700;
+      margin-top: 0.2rem;
+    }
 
     /* ── Indicador de carga API ── */
     .api-status {
@@ -1633,51 +1806,107 @@
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ELIMINATORIAS
+    // ELIMINATORIAS — Bracket Tree
     // ═══════════════════════════════════════════════════════════
     _renderEliminatorias() {
       const r = this._refs;
-      const rondas = [
-        { clave: 'treintaidosavos', titulo: 'Treintaidosavos de Final' },
-        { clave: 'dieciseisavos', titulo: 'Dieciseisavos de Final' },
-        { clave: 'cuartos', titulo: 'Cuartos de Final' },
-        { clave: 'semis', titulo: 'Semifinales' },
-        { clave: 'tercerPuesto', titulo: 'Tercer Puesto' },
-        { clave: 'final', titulo: 'Final' }
-      ];
+      const llave = this._torneo.llave;
 
-      const _renderPartido = (m) => `
-        <div class="partido-llave">
-          <div class="equipos-llave">
-            <div class="fila-equipo">
-              <span class="nombre-equipo ${m.golLocal > m.golVisitante ? 'ganador' : ''}">${m.local}</span>
-              <span class="gol-equipo ${m.golLocal > m.golVisitante ? 'ganador' : ''}">${m.golLocal ?? '-'}</span>
-            </div>
-            <div class="fila-equipo">
-              <span class="nombre-equipo ${m.golVisitante > m.golLocal ? 'ganador' : ''}">${m.visitante}</span>
-              <span class="gol-equipo ${m.golVisitante > m.golLocal ? 'ganador' : ''}">${m.golVisitante ?? '-'}</span>
-            </div>
-          </div>
-          <div class="hora-partido">${m.fecha ? new Date(m.fecha + 'T00:00:00Z').toLocaleDateString('es-419', { month: 'short', day: 'numeric' }) : ''}</div>
-        </div>
-      `;
+      // Check if bracket is completely empty (all arrays empty, final/3rd TBD)
+      const isEmpty =
+        llave.treintaidosavos.length === 0 &&
+        llave.dieciseisavos.length === 0 &&
+        llave.cuartos.length === 0 &&
+        llave.semis.length === 0 &&
+        llave.tercerPuesto.local === 'Por definir' &&
+        llave.final.local === 'Por definir';
 
-      r.contenidoEliminatorias.innerHTML = rondas.map(ronda => {
-        const partidos = this._torneo.llave[ronda.clave];
+      if (isEmpty) {
+        r.contenidoEliminatorias.innerHTML = `
+          <div class="llave-vacia">
+            <span class="icono-fase">🏟️</span>
+            La fase eliminatoria se definirá<br>al terminar la fase de grupos
+          </div>`;
+        return;
+      }
 
-        // Partido único (objeto): final, tercerPuesto
-        if (partidos && !Array.isArray(partidos)) {
-          return `<div class="ronda-llave"><div class="titulo-ronda">${ronda.titulo}</div>${_renderPartido(partidos)}</div>`;
-        }
+      const _renderEquipo = (nombre, goles, esGanador, isPlaceholder) => {
+        const cls = esGanador ? 'bracket-equipo ganador' : 'bracket-equipo';
+        const nombreCls = isPlaceholder ? 'bracket-nombre placeholder' : 'bracket-nombre';
+        return `<div class="${cls}">
+          <span class="${nombreCls}">${nombre}</span>
+          <span class="bracket-goles">${goles !== null && goles !== undefined ? goles : '-'}</span>
+        </div>`;
+      };
 
-        // Array vacío: ronda aún no definida
-        if (!partidos || partidos.length === 0) {
-          return `<div class="ronda-llave"><div class="titulo-ronda">${ronda.titulo}</div><div class="llave-vacia">Se completará al terminar la fase de grupos</div></div>`;
-        }
+      const _renderMatch = (m, isFinal) => {
+        const isPlaceholder = m.local.match(/^\d/) || m.local.includes('Ganador') || m.local === 'Por definir';
+        const localGanador = m.golLocal !== null && m.golVisitante !== null && m.golLocal > m.golVisitante;
+        const visitanteGanador = m.golLocal !== null && m.golVisitante !== null && m.golVisitante > m.golLocal;
 
-        // Array con partidos
-        return `<div class="ronda-llave"><div class="titulo-ronda">${ronda.titulo}</div>${partidos.map(_renderPartido).join('')}</div>`;
-      }).join('');
+        return `<div class="bracket-match ${isFinal ? 'final-match' : ''}">
+          ${_renderEquipo(m.local, m.golLocal, localGanador, isPlaceholder)}
+          ${_renderEquipo(m.visitante, m.golVisitante, visitanteGanador, isPlaceholder)}
+        </div>`;
+      };
+
+      const _renderRonda = (partidos, titulo, isFinal) => {
+        if (!partidos || (Array.isArray(partidos) && partidos.length === 0)) return '';
+        const matches = Array.isArray(partidos)
+          ? partidos.map(m => _renderMatch(m, false)).join('')
+          : _renderMatch(partidos, isFinal);
+        return `<div class="bracket-ronda">
+          <div class="bracket-ronda-titulo">${titulo}</div>
+          <div class="bracket-partidos">${matches}</div>
+        </div>`;
+      };
+
+      // Build champion badge if final is finished
+      let campeonHtml = '';
+      if (llave.final.estado === 'finalizado' && llave.final.golLocal !== null) {
+        const ganador = llave.final.golLocal > llave.final.golVisitante
+          ? llave.final.local : llave.final.visitante;
+        campeonHtml = `<div class="campeon-badge">
+          <span class="trofeo">🏆</span>
+          <div class="campeon-nombre">${ganador}</div>
+        </div>`;
+      }
+
+      // Build bracket columns — show R32, R16, QF, SF, Final
+      // Third place is shown below SF
+      let html = '<div class="bracket-tree">';
+
+      // Only show R32 if it has data
+      if (llave.treintaidosavos.length > 0) {
+        html += _renderRonda(llave.treintaidosavos, 'R32', false);
+      }
+      if (llave.dieciseisavos.length > 0) {
+        html += _renderRonda(llave.dieciseisavos, 'R16', false);
+      }
+      if (llave.cuartos.length > 0) {
+        html += _renderRonda(llave.cuartos, 'Cuartos', false);
+      }
+      if (llave.semis.length > 0) {
+        html += _renderRonda(llave.semis, 'Semis', false);
+      }
+
+      // Final column
+      html += _renderRonda(llave.final, 'Final', true);
+
+      html += '</div>';
+
+      // Add third place below
+      if (llave.tercerPuesto.local !== 'Por definir') {
+        html += `<div style="margin-top:0.5rem;">
+          <div class="bracket-ronda-titulo" style="text-align:left;">Tercer Puesto</div>
+          ${_renderMatch(llave.tercerPuesto, false)}
+        </div>`;
+      }
+
+      // Add champion badge
+      html += campeonHtml;
+
+      r.contenidoEliminatorias.innerHTML = html;
     }
 
     // ═══════════════════════════════════════════════════════════
