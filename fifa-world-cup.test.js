@@ -36,6 +36,23 @@ function it(name, fn) {
   }
 }
 
+let _beforeEachFn = null;
+function beforeEach(fn) { _beforeEachFn = fn; }
+
+// Override describe to run beforeEach before each it
+const _originalDescribe = describe;
+describe = function(name, fn) {
+  currentGroup = name;
+  const _it = it;
+  it = function(testName, testFn) {
+    if (_beforeEachFn) _beforeEachFn();
+    _it(testName, testFn);
+  };
+  fn();
+  it = _it;
+  _beforeEachFn = null;
+};
+
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message || 'Assertion failed');
@@ -1371,6 +1388,122 @@ describe('Acerca de tab — about panel', () => {
   });
   it('source contains panel-acerca class', () => {
     assert(source.includes('panel-acerca'), 'Should have acerca panel');
+  });
+});
+
+// ── Snooze functionality ──
+describe('Snooze — localStorage keys and logic', () => {
+  // Mock localStorage
+  const mockStore = {};
+  const mockLocalStorage = {
+    getItem: (key) => mockStore[key] || null,
+    setItem: (key, value) => { mockStore[key] = String(value); },
+    removeItem: (key) => { delete mockStore[key]; },
+    clear: () => { for (const k in mockStore) delete mockStore[k]; }
+  };
+
+  beforeEach(() => { mockLocalStorage.clear(); });
+
+  // Pure function to test snooze verification logic
+  function verificarSnooze(key, store) {
+    const permanente = store.getItem(`${key}:snooze-permanente`);
+    if (permanente === 'true') {
+      return { permitido: false, razon: 'permanente' };
+    }
+
+    const hasta = store.getItem(`${key}:snooze-hasta`);
+    if (hasta) {
+      const ahora = new Date();
+      const fechaLimite = new Date(hasta);
+      if (ahora < fechaLimite) {
+        return { permitido: false, razon: 'temporal', hasta: fechaLimite };
+      }
+      store.removeItem(`${key}:snooze-hasta`);
+    }
+
+    return { permitido: true };
+  }
+
+  function guardarSnooze(key, accion, store, proximoPartido) {
+    if (accion === 'nunca') {
+      store.setItem(`${key}:snooze-permanente`, 'true');
+    } else if (accion === 'hasta-proximo') {
+      if (proximoPartido) {
+        const fecha = new Date(proximoPartido.fecha + 'T' + proximoPartido.hora + ':00Z');
+        store.setItem(`${key}:snooze-hasta`, fecha.toISOString());
+      } else {
+        const manana = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        store.setItem(`${key}:snooze-hasta`, manana.toISOString());
+      }
+    }
+  }
+
+  it('permite abrir cuando no hay snooze', () => {
+    const result = verificarSnooze('fifa-widget:default', mockLocalStorage);
+    assert(result.permitido === true);
+  });
+
+  it('bloquea cuando snooze permanente está activo', () => {
+    mockLocalStorage.setItem('fifa-widget:default:snooze-permanente', 'true');
+    const result = verificarSnooze('fifa-widget:default', mockLocalStorage);
+    assert(result.permitido === false);
+    assert(result.razon === 'permanente');
+  });
+
+  it('bloquea cuando snooze temporal no expiró', () => {
+    const futuro = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+    mockLocalStorage.setItem('fifa-widget:default:snooze-hasta', futuro.toISOString());
+    const result = verificarSnooze('fifa-widget:default', mockLocalStorage);
+    assert(result.permitido === false);
+    assert(result.razon === 'temporal');
+  });
+
+  it('permite cuando snooze temporal expiró', () => {
+    const pasado = new Date(Date.now() - 60 * 60 * 1000); // 1 hora atrás
+    mockLocalStorage.setItem('fifa-widget:default:snooze-hasta', pasado.toISOString());
+    const result = verificarSnooze('fifa-widget:default', mockLocalStorage);
+    assert(result.permitido === true);
+    // Debería haber limpiado la key expirada
+    assert(mockLocalStorage.getItem('fifa-widget:default:snooze-hasta') === null);
+  });
+
+  it('guarda snooze permanente correctamente', () => {
+    guardarSnooze('fifa-widget:default', 'nunca', mockLocalStorage, null);
+    assert(mockLocalStorage.getItem('fifa-widget:default:snooze-permanente') === 'true');
+  });
+
+  it('guarda snooze hasta próximo partido con fecha', () => {
+    const proximo = { fecha: '2026-07-01', hora: '15:00' };
+    guardarSnooze('fifa-widget:default', 'hasta-proximo', mockLocalStorage, proximo);
+    const guardado = mockLocalStorage.getItem('fifa-widget:default:snooze-hasta');
+    assert(guardado !== null);
+    assert(guardado.includes('2026-07-01'));
+  });
+
+  it('guarda snooze 24h cuando no hay próximo partido', () => {
+    guardarSnooze('fifa-widget:default', 'hasta-proximo', mockLocalStorage, null);
+    const guardado = mockLocalStorage.getItem('fifa-widget:default:snooze-hasta');
+    assert(guardado !== null);
+    const fecha = new Date(guardado);
+    const ahora = new Date();
+    const diffHoras = (fecha - ahora) / (1000 * 60 * 60);
+    assert(diffHoras >= 23 && diffHoras <= 25, `Expected ~24h, got ${diffHoras}h`);
+  });
+
+  it('no guarda nada con acción "cerrar"', () => {
+    guardarSnooze('fifa-widget:default', 'cerrar', mockLocalStorage, null);
+    assert(mockLocalStorage.getItem('fifa-widget:default:snooze-permanente') === null);
+    assert(mockLocalStorage.getItem('fifa-widget:default:snooze-hasta') === null);
+  });
+
+  it('usa key personalizada cuando hay api-url', () => {
+    const key = 'fifa-widget:mi-api';
+    mockLocalStorage.setItem(`${key}:snooze-permanente`, 'true');
+    const result = verificarSnooze(key, mockLocalStorage);
+    assert(result.permitido === false);
+    // La key default no debería estar afectada
+    const resultDefault = verificarSnooze('fifa-widget:default', mockLocalStorage);
+    assert(resultDefault.permitido === true);
   });
 });
 

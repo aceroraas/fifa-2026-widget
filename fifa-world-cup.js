@@ -458,6 +458,88 @@
     }
     .btn-cerrar:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
+    /* Grupo de cerrar + snooze */
+    .cerrar-grupo { display: flex; align-items: center; gap: 0.3rem; }
+    .btn-snooze {
+      background: rgba(255,255,255,0.08); border: none; color: #8899aa;
+      width: 26px; height: 26px; border-radius: 50%; font-size: 1.1rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; line-height: 1;
+    }
+    .btn-snooze:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+    /* Panel de snooze */
+    .snooze-panel {
+      display: none;
+      padding: 1rem;
+      border-bottom: 1px solid var(--fwc-border);
+      background: rgba(0,0,0,0.15);
+    }
+    .snooze-panel.visible { display: block; }
+    .snooze-titulo {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--fwc-text);
+      margin-bottom: 0.8rem;
+    }
+    .snooze-opciones { display: flex; flex-direction: column; gap: 0.5rem; }
+    .snooze-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 0.8rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--fwc-border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      color: var(--fwc-text);
+    }
+    .snooze-btn:hover {
+      background: rgba(79,195,247,0.1);
+      border-color: rgba(79,195,247,0.3);
+    }
+    .snooze-icono { font-size: 1.2rem; flex-shrink: 0; }
+    .snooze-texto { display: flex; flex-direction: column; gap: 0.1rem; }
+    .snooze-texto strong { font-size: 0.75rem; font-weight: 600; }
+    .snooze-desc { font-size: 0.65rem; color: var(--fwc-text-dim); }
+
+    /* Confirmación */
+    .snooze-confirm {
+      margin-top: 0.8rem;
+      padding: 0.8rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(79,195,247,0.3);
+      border-radius: 8px;
+    }
+    .snooze-confirm-texto {
+      font-size: 0.75rem;
+      color: var(--fwc-text);
+      margin-bottom: 0.6rem;
+      text-align: center;
+    }
+    .snooze-confirm-botones { display: flex; gap: 0.5rem; justify-content: center; }
+    .snooze-confirm-btn {
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .snooze-confirm-btn.cancelar {
+      background: rgba(255,255,255,0.1);
+      color: var(--fwc-text-dim);
+    }
+    .snooze-confirm-btn.cancelar:hover { background: rgba(255,255,255,0.15); }
+    .snooze-confirm-btn.confirmar {
+      background: rgba(79,195,247,0.3);
+      color: var(--fwc-accent);
+    }
+    .snooze-confirm-btn.confirmar:hover { background: rgba(79,195,247,0.5); }
+
     /* Tabs */
     .pestanas {
       display: flex; background: rgba(0,0,0,0.2);
@@ -996,6 +1078,8 @@
       this._ultimoGoles = { local: null, visitante: null }; // track goals for animation
       // Anchor side for expand/collapse
       this._posicionLado = 'right'; // default: bottom-right
+      // Snooze state
+      this._snoozePendiente = null; // action pending confirmation
     }
 
     _inicializarLlave() {
@@ -1129,7 +1213,44 @@
           <div class="tarjeta" id="tarjeta">
             <div class="cabecera">
               <h2><span>🏆</span><span>${this._torneo.nombre}</span><span class="fase-badge" id="faseBadge">by raas</span></h2>
-              <button class="btn-cerrar" id="btnCerrar">&times;</button>
+              <div class="cerrar-grupo">
+                <button class="btn-snooze" id="btnSnooze" title="Opciones para no mostrar">⋯</button>
+                <button class="btn-cerrar" id="btnCerrar">&times;</button>
+              </div>
+            </div>
+            <!-- Panel de snooze (oculto por defecto) -->
+            <div class="snooze-panel" id="snoozePanel">
+              <div class="snooze-titulo">¿Querés que no se muestre más?</div>
+              <div class="snooze-opciones">
+                <button class="snooze-btn" data-action="cerrar" title="Cierra la tarjeta. Vuelve a aparecer al recargar la página.">
+                  <span class="snooze-icono">✕</span>
+                  <span class="snooze-texto">
+                    <strong>Cerrar</strong>
+                    <span class="snooze-desc">Vuelve al recargar</span>
+                  </span>
+                </button>
+                <button class="snooze-btn" data-action="hasta-proximo" title="Oculta la tarjeta hasta que llegue la fecha del próximo partido.">
+                  <span class="snooze-icono">⏰</span>
+                  <span class="snooze-texto">
+                    <strong>No mostrar hasta el próximo partido</strong>
+                    <span class="snooze-desc">Se muestra nuevamente cuando llegue la fecha</span>
+                  </span>
+                </button>
+                <button class="snooze-btn" data-action="nunca" title="Oculta la tarjeta permanentemente. Solo vuelve a aparecer si borras los datos del navegador.">
+                  <span class="snooze-icono">🚫</span>
+                  <span class="snooze-texto">
+                    <strong>No mostrar más</strong>
+                    <span class="snooze-desc">Permanente (se borra limpiando localStorage)</span>
+                  </span>
+                </button>
+              </div>
+              <div class="snooze-confirm" id="snoozeConfirm" style="display:none;">
+                <div class="snooze-confirm-texto" id="snoozeConfirmTexto"></div>
+                <div class="snooze-confirm-botones">
+                  <button class="snooze-confirm-btn cancelar" id="snoozeCancelar">Cancelar</button>
+                  <button class="snooze-confirm-btn confirmar" id="snoozeConfirmar">Confirmar</button>
+                </div>
+              </div>
             </div>
             <div class="pestanas">
               <div class="pestana activa" data-panel="proximo">Próximo</div>
@@ -1257,7 +1378,13 @@
         cuerpoPosiciones: this._shadow.getElementById('cuerpoPosiciones'),
         contenidoCalendario: this._shadow.getElementById('contenidoCalendario'),
         contenidoEliminatorias: this._shadow.getElementById('contenidoEliminatorias'),
-        apiStatus: this._shadow.getElementById('apiStatus')
+        apiStatus: this._shadow.getElementById('apiStatus'),
+        btnSnooze: this._shadow.getElementById('btnSnooze'),
+        snoozePanel: this._shadow.getElementById('snoozePanel'),
+        snoozeConfirm: this._shadow.getElementById('snoozeConfirm'),
+        snoozeConfirmTexto: this._shadow.getElementById('snoozeConfirmTexto'),
+        snoozeCancelar: this._shadow.getElementById('snoozeCancelar'),
+        snoozeConfirmar: this._shadow.getElementById('snoozeConfirmar')
       };
 
       this._bindEvents();
@@ -1568,6 +1695,29 @@
       });
       r.btnCerrar.addEventListener('click', () => this._cerrarTarjeta());
 
+      // Snooze handlers
+      r.btnSnooze.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._toggleSnoozePanel();
+      });
+
+      this._shadow.querySelectorAll('.snooze-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this._seleccionarSnooze(btn.dataset.action);
+        });
+      });
+
+      r.snoozeCancelar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._cancelarSnooze();
+      });
+
+      r.snoozeConfirmar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._confirmarSnooze();
+      });
+
       // Drag handlers (solo si tiene atributo draggable)
       if (this.hasAttribute('draggable')) {
         this._bindDrag();
@@ -1843,6 +1993,17 @@
     _abrirTarjeta() {
       const r = this._refs;
 
+      // Verificar snooze antes de abrir
+      const snooze = this._verificarSnooze();
+      if (!snooze.permitido) {
+        if (snooze.razon === 'permanente') {
+          console.log('[FIFA Widget] Tarjeta oculta permanentemente. Borrá localStorage para reactivar.');
+        } else if (snooze.razon === 'temporal') {
+          console.log(`[FIFA Widget] Tarjeta oculta hasta ${snooze.hasta.toLocaleString()}.`);
+        }
+        return; // No abrir
+      }
+
       // Pausar timer de colapso mientras la tarjeta está abierta
       clearTimeout(this._timeoutColapsar);
 
@@ -1887,6 +2048,99 @@
         // Reanudar timer de colapso al cerrar la tarjeta
         this._programarColapsar();
       }, 300);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SNOOZE — "No mostrar más" options
+    // ═══════════════════════════════════════════════════════════
+
+    _cacheKey() {
+      return 'fifa-widget:' + (this.getAttribute('api-url') || 'default');
+    }
+
+    _verificarSnooze() {
+      const key = this._cacheKey();
+
+      // Check permanent snooze
+      const permanente = localStorage.getItem(`${key}:snooze-permanente`);
+      if (permanente === 'true') {
+        return { permitido: false, razon: 'permanente' };
+      }
+
+      // Check until-next-match snooze
+      const hasta = localStorage.getItem(`${key}:snooze-hasta`);
+      if (hasta) {
+        const ahora = new Date();
+        const fechaLimite = new Date(hasta);
+        if (ahora < fechaLimite) {
+          return { permitido: false, razon: 'temporal', hasta: fechaLimite };
+        }
+        // Expired — clear it
+        localStorage.removeItem(`${key}:snooze-hasta`);
+      }
+
+      return { permitido: true };
+    }
+
+    _guardarSnooze(accion) {
+      const key = this._cacheKey();
+
+      if (accion === 'nunca') {
+        localStorage.setItem(`${key}:snooze-permanente`, 'true');
+      } else if (accion === 'hasta-proximo') {
+        const proximo = this._proximoPartido();
+        if (proximo) {
+          const fecha = new Date(proximo.fecha + 'T' + proximo.hora + ':00Z');
+          localStorage.setItem(`${key}:snooze-hasta`, fecha.toISOString());
+        } else {
+          // No hay próximo partido — guardar 24 horas
+          const manana = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          localStorage.setItem(`${key}:snooze-hasta`, manana.toISOString());
+        }
+      }
+      // 'cerrar' no guarda nada
+    }
+
+    _toggleSnoozePanel() {
+      const panel = this._refs.snoozePanel;
+      const visible = panel.classList.toggle('visible');
+      // Hide confirmation when toggling
+      this._refs.snoozeConfirm.style.display = 'none';
+    }
+
+    _seleccionarSnooze(accion) {
+      this._snoozePendiente = accion;
+      const confirmDiv = this._refs.snoozeConfirm;
+      const texto = this._refs.snoozeConfirmTexto;
+
+      const mensajes = {
+        'cerrar': '¿Cerrar la tarjeta? Volverá a aparecer al recargar la página.',
+        'hasta-proximo': '¿No mostrar hasta el próximo partido? La tarjeta se ocultará hasta que llegue la fecha del próximo partido.',
+        'nunca': '¿No mostrar más? La tarjeta no volverá a aparecer. Solo podés revertirlo borrando los datos del navegador (localStorage).'
+      };
+
+      texto.textContent = mensajes[accion] || '¿Confirmar acción?';
+      confirmDiv.style.display = 'block';
+    }
+
+    _cancelarSnooze() {
+      this._snoozePendiente = null;
+      this._refs.snoozeConfirm.style.display = 'none';
+    }
+
+    _confirmarSnooze() {
+      if (this._snoozePendiente) {
+        this._guardarSnooze(this._snoozePendiente);
+        this._snoozePendiente = null;
+      }
+      this._refs.snoozeConfirm.style.display = 'none';
+      this._refs.snoozePanel.classList.remove('visible');
+      this._cerrarTarjeta();
+    }
+
+    // Export for testing (pure functions)
+    static _parseSnoozeKey(key) {
+      return key;
     }
 
     // ═══════════════════════════════════════════════════════════
