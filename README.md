@@ -278,4 +278,6 @@ No polyfills included. If you need IE11 support, add the `@webcomponents/custom-
 
 ## License
 
-MIT
+Non-commercial use only. See [LICENSE](LICENSE) for full terms.
+
+Free for personal, educational, and non-commercial use. Not for sale.
