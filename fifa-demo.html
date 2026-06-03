@@ -180,6 +180,7 @@
     <button class="btn" onclick="setState('about')">ℹ️ Acerca de</button>
     <button class="btn" onclick="setState('light')">☀️ Tema claro</button>
     <button class="btn" onclick="setState('top-left')">↖️ Posición top-left</button>
+    <button class="btn" onclick="simulateGoal()">⚽ Simular gol</button>
   </div>
 
   <div style="margin-top: 1rem;">
@@ -555,6 +556,32 @@
       info += `Arrastrable: ${widget.hasAttribute('draggable') ? 'sí' : 'no'}`;
 
       output.textContent = info;
+    }
+
+    function simulateGoal() {
+      const t = widget._torneo;
+      const liveMatch = t.partidos.find(p => p.estado === 'en-vivo');
+      if (!liveMatch) {
+        alert('Primero poné el widget en estado "EN VIVO" para simular un gol.');
+        return;
+      }
+
+      // Randomly score for home or away
+      const isHome = Math.random() > 0.5;
+      if (isHome) {
+        liveMatch.golLocal = (liveMatch.golLocal || 0) + 1;
+      } else {
+        liveMatch.golVisitante = (liveMatch.golVisitante || 0) + 1;
+      }
+
+      // Trigger the goal animation in the widget
+      widget._verificarGol();
+      widget._actualizarCuenta();
+      widget._verificarEnVivo();
+
+      const output = document.getElementById('stateOutput');
+      const scorer = isHome ? liveMatch.local : liveMatch.visitante;
+      output.textContent += `\n\n⚽ GOL de ${scorer}! (${liveMatch.golLocal}-${liveMatch.golVisitante})`;
     }
 
     // Show initial state
