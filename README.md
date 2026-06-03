@@ -7,10 +7,15 @@ A zero-dependency **Web Component** that renders a floating widget with live mat
 - **Zero dependencies** — vanilla JavaScript, no frameworks, no build step
 - **Shadow DOM** — fully encapsulated styles, no CSS conflicts with your page
 - **Floating pill** — compact countdown badge that expands into a full card on click
+- **Auto-collapse** — pill collapses after 3s, expands on hover, pauses when card is open
+- **Goal celebration** — animated pulse + auto-expand when a goal is scored
+- **Smart positioning** — card opens left or right based on widget position, auto-adjusts near screen edges
+- **Draggable** — drag the pill to any screen corner
 - **Live indicator** — animated "EN VIVO" pill with score and minute during active matches
-- **4 tabs**: Next Match, Standings, Schedule, Knockout Bracket
+- **5 tabs**: Next Match, Standings, Schedule, Knockout Bracket, About
 - **Dark / Light theme** via attribute
 - **Configurable position** — 4 corners of the viewport
+- **Snooze options** — hide widget until reload, next match, or permanently
 - **Smart API polling** — only queries the API on match days (saves bandwidth)
 - **TheSportsDB integration** — free live data, no API key required
 - **Custom API endpoint** — plug in your own backend for custom data
@@ -126,7 +131,7 @@ The widget merges incoming data with its static tournament model. Only fields yo
 
 ### LocalStorage Caching
 
-The widget caches **static tournament data** (groups, teams, schedule, venues, bracket structure) in `localStorage` under the key `fifa-widget-v1`.
+The widget caches **static tournament data** (groups, teams, schedule, venues, bracket structure) in `localStorage` under the key `fifa-widget-v1:{api-url}`.
 
 | Scenario | Behavior |
 |---|---|
@@ -184,16 +189,36 @@ When detailed event data is available (from TheSportsDB or a custom API), indivi
 | **Posiciones** | Group standings table with selector (PJ, PG, PE, PP, GF, GC, GD, Pts). Top 2 rows highlighted in green |
 | **Calendario** | All matches grouped by date, with scores for finished/live games |
 | **Eliminatorias** | Knockout bracket — shows "pending" until group stage completes |
+| **Acerca de** | Credits, API provider links, tech stack info |
+
+## Snooze Options
+
+Click the `⋯` button next to the close button (`×`) in the card header to hide the widget:
+
+| Option | Behavior |
+|---|---|
+| **Ocultar hasta recargar** | Hides widget until page reload (F5). No localStorage used. |
+| **Ocultar hasta el próximo partido** | Hides until the next match date/time arrives. Uses localStorage. |
+| **Ocultar permanentemente** | Hides permanently. Only reversible by clearing browser localStorage. |
+
+## Pill Behavior
+
+- **Auto-collapse**: Pill collapses to a small circle after 3 seconds of no hover
+- **Hover**: Expands immediately, collapses after 3s when mouse leaves
+- **Card open**: Collapse timer is paused, resumes when card closes
+- **Goal scored**: Triggers celebration animation + auto-expand
+- **Drag**: Drag the pill anywhere on screen; it remembers its position
+- **Smart direction**: If widget is on the left, content flows right; if on the right, content flows left
 
 ## File Structure
 
 ```
 fifa-widget/
-├── fifa-world-cup.js     # Web Component (IIFE, ~1320 lines)
-├── fifa-card.html        # Demo page with examples
-├── fifa-demo.html        # Interactive state demo with mock data
-├── fifa-world-cup.test.js # Unit tests (54 tests, no dependencies)
-└── README.md             # This file
+├── fifa-world-cup.js       # Web Component (IIFE, ~2600 lines)
+├── fifa-card.html          # Demo page with examples
+├── fifa-demo.html          # Interactive state demo with mock data
+├── fifa-world-cup.test.js  # Unit tests (129 tests, no dependencies)
+└── README.md               # This file
 ```
 
 ## Testing
@@ -204,7 +229,7 @@ Run unit tests with no dependencies:
 node fifa-world-cup.test.js
 ```
 
-Tests cover (120 total):
+Tests cover (129 total):
 - Team name mapping (MAPA_EQUIPOS) — 13 tests
 - Tournament data structure (TORNEO) — 11 tests
 - Position recalculation logic — 7 tests
@@ -223,6 +248,7 @@ Tests cover (120 total):
 - Collapse state logic — 4 tests
 - Header badge branding — 1 test
 - Acerca de tab — 5 tests
+- Snooze functionality — 9 tests
 
 ## Interactive Demo
 
@@ -237,6 +263,7 @@ Open `fifa-demo.html` in a browser to see the widget in different states:
 - **Light theme** — alternate color scheme
 - **Top-left position** — different corner placement
 - **Acerca de** — about panel with Strix branding and API provider links
+- **Simulate goal** — trigger goal animation on a live match
 
 ## Browser Support
 
