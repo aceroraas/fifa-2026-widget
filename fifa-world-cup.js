@@ -838,6 +838,87 @@
       margin-top: 0.2rem;
     }
 
+    /* ── Panel: Acerca de ── */
+    .panel-acerca { padding: 1.2rem; }
+    .acerca-contenido {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .acerca-header {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.8rem;
+      background: linear-gradient(135deg, rgba(79,195,247,0.1), rgba(79,195,247,0.03));
+      border: 1px solid rgba(79,195,247,0.15);
+      border-radius: 12px;
+    }
+    .acerca-logo {
+      font-size: 2rem;
+      animation: giroLento 10s linear infinite;
+    }
+    .acerca-titulo { display: flex; flex-direction: column; }
+    .acerca-nombre {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--fwc-accent);
+    }
+    .acerca-creador {
+      font-size: 0.75rem;
+      color: var(--fwc-text-dim);
+      font-weight: 500;
+    }
+    .acerca-seccion { display: flex; flex-direction: column; gap: 0.4rem; }
+    .acerca-subtitulo {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--fwc-text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .acerca-provider {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.4rem 0.8rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--fwc-border);
+      border-radius: 8px;
+      color: var(--fwc-text);
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .acerca-provider:hover {
+      background: rgba(79,195,247,0.1);
+      border-color: rgba(79,195,247,0.3);
+      color: var(--fwc-accent);
+      transform: translateY(-1px);
+    }
+    .acerca-provider::after {
+      content: '↗';
+      font-size: 0.7rem;
+      color: var(--fwc-text-dim);
+    }
+    .acerca-tech {
+      font-size: 0.75rem;
+      color: var(--fwc-text-dim);
+      padding: 0.4rem 0.8rem;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.7rem;
+    }
+    .acerca-version {
+      text-align: center;
+      font-size: 0.65rem;
+      color: var(--fwc-text-dim);
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--fwc-border);
+    }
+
     /* ── Indicador de carga API ── */
     .api-status {
       font-size: 0.6rem;
@@ -1024,7 +1105,7 @@
           </div>
           <div class="tarjeta" id="tarjeta">
             <div class="cabecera">
-              <h2><span>🏆</span><span>${this._torneo.nombre}</span><span class="fase-badge" id="faseBadge">Fase de Grupos</span></h2>
+              <h2><span>🏆</span><span>${this._torneo.nombre}</span><span class="fase-badge" id="faseBadge">by raas</span></h2>
               <button class="btn-cerrar" id="btnCerrar">&times;</button>
             </div>
             <div class="pestanas">
@@ -1032,6 +1113,7 @@
               <div class="pestana" data-panel="posiciones">Posiciones</div>
               <div class="pestana" data-panel="calendario">Calendario</div>
               <div class="pestana" data-panel="eliminatorias">Eliminatorias</div>
+              <div class="pestana" data-panel="acerca">Acerca de</div>
             </div>
             <div class="contenido">
               <div class="panel panel-proximo activo" id="panel-proximo">
@@ -1092,6 +1174,26 @@
               </div>
               <div class="panel panel-eliminatorias" id="panel-eliminatorias">
                 <div class="panel-eliminatorias" id="contenidoEliminatorias"></div>
+              </div>
+              <div class="panel panel-acerca" id="panel-acerca">
+                <div class="acerca-contenido">
+                  <div class="acerca-header">
+                    <span class="acerca-logo">⚡</span>
+                    <div class="acerca-titulo">
+                      <div class="acerca-nombre">Equipo de Strix</div>
+                      <div class="acerca-creador">by raas</div>
+                    </div>
+                  </div>
+                  <div class="acerca-seccion">
+                    <div class="acerca-subtitulo">Datos en vivo</div>
+                    <a href="https://www.thesportsdb.com" target="_blank" rel="noopener" class="acerca-provider">TheSportsDB</a>
+                  </div>
+                  <div class="acerca-seccion">
+                    <div class="acerca-subtitulo">Tecnología</div>
+                    <div class="acerca-tech">Web Components · Shadow DOM · Vanilla JS</div>
+                  </div>
+                  <div class="acerca-version">v1.0.0 — Copa Mundial FIFA 2026</div>
+                </div>
               </div>
             </div>
           </div>

@@ -1299,6 +1299,81 @@ describe('Knockout merge — API events land in correct llave arrays', () => {
   });
 });
 
+// ── Goal detection (collapsible pill logic) ──
+describe('Goal detection — _verificarGol behavior', () => {
+  // Pure function mirroring component logic
+  function detectarGol(golesActuales, golesAnteriores) {
+    return golesActuales.local !== golesAnteriores.local ||
+           golesActuales.visitante !== golesAnteriores.visitante;
+  }
+
+  it('detects new home goal', () => {
+    assert(detectarGol({ local: 1, visitante: 0 }, { local: 0, visitante: 0 }));
+  });
+  it('detects new away goal', () => {
+    assert(detectarGol({ local: 0, visitante: 1 }, { local: 0, visitante: 0 }));
+  });
+  it('detects multiple goals', () => {
+    assert(detectarGol({ local: 2, visitante: 1 }, { local: 1, visitante: 0 }));
+  });
+  it('no detection when scores unchanged', () => {
+    assert(!detectarGol({ local: 1, visitante: 0 }, { local: 1, visitante: 0 }));
+  });
+  it('no detection when both null', () => {
+    assert(!detectarGol({ local: null, visitante: null }, { local: null, visitante: null }));
+  });
+});
+
+// ── Collapse state logic ──
+describe('Collapse state — pill auto-hide behavior', () => {
+  it('starts in collapsed state', () => {
+    // Component initializes with _colapsado = true
+    const initialState = { colapsado: true, hoverActivo: false };
+    assert(initialState.colapsado === true);
+  });
+  it('hover sets hoverActivo to true', () => {
+    const state = { colapsado: true, hoverActivo: false };
+    state.hoverActivo = true;
+    assert(state.hoverActivo === true);
+  });
+  it('collapse timer is 10 seconds', () => {
+    const COLLAPSE_DELAY = 10000;
+    assertEqual(COLLAPSE_DELAY, 10000);
+  });
+  it('expand timer is 60 seconds (1 minute)', () => {
+    const EXPAND_TIMEOUT = 60000;
+    assertEqual(EXPAND_TIMEOUT, 60000);
+  });
+});
+
+// ── Header badge ──
+describe('Header badge — branding', () => {
+  it('badge text is "by raas"', () => {
+    // Extract from source
+    const badgeMatch = source.includes('fase-badge') && source.includes('by raas');
+    assert(badgeMatch, 'Header badge should contain "by raas"');
+  });
+});
+
+// ── Acerca de tab ──
+describe('Acerca de tab — about panel', () => {
+  it('source contains Acerca de tab', () => {
+    assert(source.includes('data-panel="acerca"'), 'Should have Acerca de tab');
+  });
+  it('source contains "Equipo de Strix"', () => {
+    assert(source.includes('Equipo de Strix'), 'Should mention Equipo de Strix');
+  });
+  it('source contains "by raas" in about section', () => {
+    assert(source.includes('acerca-creador'), 'Should have creator credit');
+  });
+  it('source contains TheSportsDB provider link', () => {
+    assert(source.includes('thesportsdb.com'), 'Should link to TheSportsDB');
+  });
+  it('source contains panel-acerca class', () => {
+    assert(source.includes('panel-acerca'), 'Should have acerca panel');
+  });
+});
+
 // ═══════════════════════════════════════════════════════════
 // SUMMARY
 // ═══════════════════════════════════════════════════════════

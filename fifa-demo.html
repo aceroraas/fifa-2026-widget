@@ -158,7 +158,7 @@
 <body>
 
   <h1>🏆 FIFA Widget — Demo de Estados</h1>
-  <p class="subtitle">Muestras de cada momento del componente con datos mock. Hacé click en el widget para ver la tarjeta expandida.</p>
+  <p class="subtitle">Muestras de cada momento del componente con datos mock. Hacé click en el widget para ver la tarjeta expandida. El pill se colapsa solo después de 10s.</p>
 
   <!-- ═══════════════════════════════════════════
        SINGLE WIDGET — switch states with buttons
@@ -177,6 +177,7 @@
     <button class="btn" onclick="setState('ko-live')">⚡ Eliminatorias (en curso)</button>
     <button class="btn" onclick="setState('ko-finished')">🏆 Eliminatorias (finalizado)</button>
     <button class="btn" onclick="setState('mixed')">🔀 Mixto: grupos + eliminatorias</button>
+    <button class="btn" onclick="setState('about')">ℹ️ Acerca de</button>
     <button class="btn" onclick="setState('light')">☀️ Tema claro</button>
     <button class="btn" onclick="setState('top-left')">↖️ Posición top-left</button>
   </div>
@@ -359,6 +360,12 @@
             golLocal: 1, golVisitante: 1,
             estado: 'en-vivo', fecha: '2026-07-03'
           };
+          break;
+
+        case 'about':
+          // Just show the widget normally — user can click "Acerca de" tab
+          // Expand the pill so user can see it
+          widget._expandir();
           break;
 
         case 'ko-placeholders':
