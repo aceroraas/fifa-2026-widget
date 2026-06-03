@@ -765,6 +765,7 @@
       if (this._intervaloVivo) clearInterval(this._intervaloVivo);
       if (this._timeoutDia) clearTimeout(this._timeoutDia);
       document.removeEventListener('keydown', this._handleKeyDown);
+      document.removeEventListener('click', this._handleClickOutside);
       if (this._onDragMoveBound) {
         document.removeEventListener('mousemove', this._onDragMoveBound);
         document.removeEventListener('touchmove', this._onDragMoveBound);
@@ -1010,6 +1011,15 @@
       };
 
       document.addEventListener('keydown', this._handleKeyDown);
+
+      // Click fuera de la tarjeta → cerrar
+      this._handleClickOutside = (e) => {
+        if (!r.widget.classList.contains('tarjeta-abierta')) return;
+        // Si el click fue dentro del host (shadow DOM), ignorar
+        if (this.contains(e.target)) return;
+        this._cerrarTarjeta();
+      };
+      document.addEventListener('click', this._handleClickOutside);
     }
 
     // ═══════════════════════════════════════════════════════════
