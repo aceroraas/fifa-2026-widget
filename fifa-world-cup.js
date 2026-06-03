@@ -2007,19 +2007,43 @@
 
       r.widget.classList.add('tarjeta-abierta');
 
-      // Calcular dirección: ¿hay más espacio arriba o abajo?
+      // Calcular dirección y ajustar posición para que no se salga de la pantalla
       const rect = this.getBoundingClientRect();
+      const tarjetaAncho = 320; // ancho aproximado de la tarjeta
+      const tarjetaAlturaEstimada = 480;
+      const margen = 12; // px mínimos desde el borde
+
+      // ── Ajuste horizontal ──
+      if (rect.left < margen) {
+        // Está muy a la izquierda — mover hacia adentro
+        this.style.left = margen + 'px';
+        this.style.right = 'auto';
+        this._posicionLado = 'left';
+      } else if (rect.right + tarjetaAncho > window.innerWidth) {
+        // Se saldría por la derecha — mover hacia adentro
+        this.style.right = margen + 'px';
+        this.style.left = 'auto';
+        this._posicionLado = 'right';
+      } else {
+        // Posición normal — detectar lado para el contenido
+        const centro = rect.left + rect.width / 2;
+        this._posicionLado = centro < window.innerWidth / 2 ? 'left' : 'right';
+      }
+
+      // ── Ajuste vertical ──
       const espacioAbajo = window.innerHeight - rect.bottom;
       const espacioArriba = rect.top;
-      const tarjetaAlturaEstimada = 480; // ~80vh max
 
       r.tarjeta.classList.remove('hacia-abajo', 'hacia-arriba');
 
-      if (espacioAbajo < tarjetaAlturaEstimada && espacioArriba > espacioAbajo) {
-        // Poco espacio abajo, más espacio arriba → abrir hacia arriba
+      if (espacioArriba < tarjetaAlturaEstimada && espacioAbajo > espacioArriba) {
+        // Poco espacio arriba → abrir hacia abajo
+        r.tarjeta.classList.add('hacia-abajo');
+      } else if (espacioAbajo < tarjetaAlturaEstimada && espacioArriba > espacioAbajo) {
+        // Poco espacio abajo → abrir hacia arriba
         r.tarjeta.classList.add('hacia-arriba');
       } else {
-        // Espacio suficiente abajo → abrir hacia abajo (default)
+        // Espacio suficiente en ambos lados → default hacia abajo
         r.tarjeta.classList.add('hacia-abajo');
       }
 
