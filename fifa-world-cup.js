@@ -1917,19 +1917,26 @@
       this._dragOffset = { x: pos.x - rect.left, y: pos.y - rect.top };
       this._dragMoved = false;
       this._dragging = true;
+      this._dragStartWidth = rect.width; // guardar ancho para cálculos
 
-      // Colapsar durante el drag para mejor experiencia
+      // Guardar estado para restaurar después
       this._wasColapsado = this._colapsado;
-      if (!this._colapsado) {
-        this._colapsar();
-      }
 
-      // Fijar posición actual como top/left inline
+      // Fijar posición actual preservando el lado de anclaje
       this.style.position = 'fixed';
       this.style.top = rect.top + 'px';
-      this.style.left = rect.left + 'px';
-      this.style.right = 'auto';
-      this.style.bottom = 'auto';
+
+      // Si está del lado derecho, usar right para evitar salto
+      const centro = rect.left + rect.width / 2;
+      if (centro >= window.innerWidth / 2) {
+        this._posicionLado = 'right';
+        this.style.right = (window.innerWidth - rect.right) + 'px';
+        this.style.left = 'auto';
+      } else {
+        this._posicionLado = 'left';
+        this.style.left = rect.left + 'px';
+        this.style.right = 'auto';
+      }
 
       document.addEventListener('mousemove', this._onDragMoveBound);
       document.addEventListener('mouseup', this._onDragEndBound);
@@ -1946,11 +1953,19 @@
       const newY = pos.y - this._dragOffset.y;
 
       // Detectar si se movió más de 5px (distinguir click de drag)
-      const rect = this.getBoundingClientRect();
-      const moved = Math.abs(newX - rect.left) + Math.abs(newY - rect.top);
+      const startX = this._posicionLado === 'right'
+        ? window.innerWidth - parseFloat(this.style.right || 0) - this._dragStartWidth
+        : parseFloat(this.style.left || 0);
+      const startY = parseFloat(this.style.top || 0);
+      const moved = Math.abs(newX - startX) + Math.abs(newY - startY);
       if (moved > 5) this._dragMoved = true;
 
-      this.style.left = newX + 'px';
+      // Mover preservando el lado de anclaje
+      if (this._posicionLado === 'right') {
+        this.style.right = (window.innerWidth - newX - this._dragStartWidth) + 'px';
+      } else {
+        this.style.left = newX + 'px';
+      }
       this.style.top = newY + 'px';
     }
 
@@ -1960,23 +1975,6 @@
       document.removeEventListener('mouseup', this._onDragEndBound);
       document.removeEventListener('touchmove', this._onDragMoveBound);
       document.removeEventListener('touchend', this._onDragEndBound);
-
-      // Fijar posición según el lado de la pantalla
-      const rect = this.getBoundingClientRect();
-      const centro = rect.left + rect.width / 2;
-      const mitadPantalla = window.innerWidth / 2;
-
-      if (centro >= mitadPantalla) {
-        // Lado derecho — usar right para que el contenido fluya hacia adentro
-        this._posicionLado = 'right';
-        this.style.right = (window.innerWidth - rect.right) + 'px';
-        this.style.left = 'auto';
-      } else {
-        // Lado izquierdo — usar left
-        this._posicionLado = 'left';
-        this.style.left = rect.left + 'px';
-        this.style.right = 'auto';
-      }
 
       // Restaurar estado después del drag
       if (!this._wasColapsado && !this._dragMoved) {
