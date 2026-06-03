@@ -303,9 +303,39 @@
       cursor: pointer;
       transition: all 0.3s ease;
       animation: live-pulse 2s ease-in-out infinite;
+      overflow: hidden;
+      max-width: 400px;
     }
     .live-pill.activo { display: flex; }
     .live-pill:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76,175,80,0.3); }
+
+    /* Live pill collapsed */
+    .live-pill.colapsado {
+      padding: 0.5rem;
+      border-radius: 50%;
+      max-width: 48px;
+    }
+    .live-pill.colapsado .live-equipos,
+    .live-pill.colapsado .live-marcador,
+    .live-pill.colapsado .live-minuto {
+      max-width: 0;
+      opacity: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* Goal celebration animation */
+    @keyframes golCelebracion {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76,175,80,0.6); }
+      25% { transform: scale(1.15); box-shadow: 0 0 20px 8px rgba(76,175,80,0.4); }
+      50% { transform: scale(1.05); box-shadow: 0 0 10px 4px rgba(76,175,80,0.3); }
+      75% { transform: scale(1.1); box-shadow: 0 0 15px 6px rgba(76,175,80,0.2); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76,175,80,0); }
+    }
+    .live-pill.gol-animado {
+      animation: golCelebracion 1.5s ease-out;
+    }
 
     @keyframes live-pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(76,175,80,0.3); }
@@ -341,6 +371,8 @@
       cursor: pointer;
       transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
       user-select: none;
+      overflow: hidden;
+      max-width: 400px;
     }
     .idle-pill:hover {
       background: rgba(26,58,92,0.45);
@@ -349,19 +381,38 @@
       box-shadow: 0 8px 25px rgba(26,58,92,0.4);
     }
 
+    /* Collapsed state — only ball visible */
+    .idle-pill.colapsado {
+      padding: 0.55rem;
+      border-radius: 50%;
+      max-width: 48px;
+    }
+    .idle-pill.colapsado .texto-cuenta {
+      max-width: 0;
+      opacity: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
     .idle-pill .pelota {
       font-size: 1.2rem; display: inline-block; transition: transform 0.3s ease;
+      flex-shrink: 0;
     }
     .idle-pill:hover .pelota { animation: girar 0.8s linear infinite; }
+    .idle-pill.colapsado .pelota { animation: giroLento 60s linear infinite; }
     @keyframes girar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes giroLento { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     .idle-pill .texto-cuenta {
       font-size: 0.8rem; color: rgba(255,255,255,0.7); font-weight: 500; white-space: nowrap;
+      transition: all 0.3s ease;
     }
     .idle-pill:hover .texto-cuenta { color: #fff; }
 
     :host([theme="light"]) .idle-pill .texto-cuenta { color: rgba(0,0,0,0.6); }
     :host([theme="light"]) .idle-pill:hover .texto-cuenta { color: #333; }
+    :host([theme="light"]) .idle-pill.colapsado { background: rgba(0,0,0,0.08); }
 
     .cabecera {
       background: linear-gradient(135deg, #1a3a5c, #0d2137);
@@ -836,6 +887,12 @@
       this._dragOffset = { x: 0, y: 0 };
       this._dragMoved = false;
       this._desdeCache = false;
+      // Collapse state
+      this._colapsado = true; // start collapsed
+      this._hoverActivo = false;
+      this._timeoutColapsar = null;
+      this._timeoutExpand = null;
+      this._ultimoGoles = { local: null, visitante: null }; // track goals for animation
     }
 
     _inicializarLlave() {
@@ -1099,6 +1156,8 @@
       if (this._intervaloCuenta) clearInterval(this._intervaloCuenta);
       if (this._intervaloVivo) clearInterval(this._intervaloVivo);
       if (this._timeoutDia) clearTimeout(this._timeoutDia);
+      if (this._timeoutColapsar) clearTimeout(this._timeoutColapsar);
+      if (this._timeoutExpand) clearTimeout(this._timeoutExpand);
       document.removeEventListener('keydown', this._handleKeyDown);
       document.removeEventListener('click', this._handleClickOutside);
       if (this._onDragMoveBound) {
@@ -1299,6 +1358,9 @@
       // Actualizar pill de en vivo
       this._verificarEnVivo();
 
+      // Detectar goles → animación de celebración
+      this._verificarGol();
+
       // Guardar estáticos en cache
       this._saveCache();
     }
@@ -1320,6 +1382,10 @@
         this._renderPosiciones();
         this._renderCalendario();
       }
+
+      // Actualizar pill de en vivo y detectar goles
+      this._verificarEnVivo();
+      this._verificarGol();
 
       // Guardar estáticos en cache
       this._saveCache();
@@ -1408,6 +1474,92 @@
         this._cerrarTarjeta();
       };
       document.addEventListener('click', this._handleClickOutside);
+
+      // ── Collapse/Expand handlers ──
+      this._bindCollapse();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // COLLAPSE / EXPAND — auto-hide after 10s, expand on hover
+    // ═══════════════════════════════════════════════════════════
+    _bindCollapse() {
+      const pills = [this._refs.idlePill, this._refs.livePill];
+
+      pills.forEach(pill => {
+        pill.addEventListener('mouseenter', () => this._onPillHover());
+        pill.addEventListener('mouseleave', () => this._onPillLeave());
+        pill.addEventListener('touchstart', () => this._onPillHover(), { passive: true });
+      });
+
+      // Start collapse timer
+      this._programarColapsar();
+    }
+
+    _onPillHover() {
+      this._hoverActivo = true;
+      clearTimeout(this._timeoutColapsar);
+
+      // Expand immediately
+      this._expandir();
+
+      // Auto-collapse after 1 minute of no hover
+      clearTimeout(this._timeoutExpand);
+      this._timeoutExpand = setTimeout(() => this._programarColapsar(), 60000);
+    }
+
+    _onPillLeave() {
+      this._hoverActivo = false;
+      // Start 10s countdown to collapse
+      this._programarColapsar();
+    }
+
+    _programarColapsar() {
+      clearTimeout(this._timeoutColapsar);
+      this._timeoutColapsar = setTimeout(() => this._colapsar(), 10000);
+    }
+
+    _colapsar() {
+      this._colapsado = true;
+      this._refs.idlePill.classList.add('colapsado');
+      this._refs.livePill.classList.add('colapsado');
+    }
+
+    _expandir() {
+      this._colapsado = false;
+      this._refs.idlePill.classList.remove('colapsado');
+      this._refs.livePill.classList.remove('colapsado');
+    }
+
+    // Check if goals changed → trigger celebration
+    _verificarGol() {
+      const enVivo = this._torneo.partidos.find(m => m.estado === 'en-vivo');
+      if (!enVivo) return;
+
+      const golesActuales = { local: enVivo.golLocal, visitante: enVivo.golVisitante };
+      const golesAnteriores = this._ultimoGoles;
+
+      // Detect new goal
+      if (golesActuales.local !== golesAnteriores.local || golesActuales.visitante !== golesAnteriores.visitante) {
+        this._animarGol();
+      }
+
+      this._ultimoGoles = golesActuales;
+    }
+
+    _animarGol() {
+      const pill = this._refs.livePill;
+      pill.classList.remove('gol-animado');
+      // Force reflow
+      void pill.offsetHeight;
+      pill.classList.add('gol-animado');
+
+      // Expand on goal
+      this._expandir();
+      clearTimeout(this._timeoutExpand);
+      this._timeoutExpand = setTimeout(() => this._programarColapsar(), 60000);
+
+      // Remove animation class after it finishes
+      setTimeout(() => pill.classList.remove('gol-animado'), 1500);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1958,6 +2110,7 @@
         this._recalcularPosiciones();
         this._actualizarCuenta();
         this._verificarEnVivo();
+        this._verificarGol();
         this._renderPosiciones();
         this._renderCalendario();
         this._saveCache();
