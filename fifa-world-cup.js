@@ -985,15 +985,6 @@
         if (partido.estado === 'en-vivo' && evt.strProgress) {
           partido.minuto = evt.strProgress;
         }
-
-        // Parsear eventos (goles) si hay detalles
-        partido.eventos = [];
-        if (evt.strHomeGoalDetails) {
-          partido.eventos.push(...this._parsearDetallesGoles(evt.strHomeGoalDetails, local));
-        }
-        if (evt.strAwayGoalDetails) {
-          partido.eventos.push(...this._parsearDetallesGoles(evt.strAwayGoalDetails, visitante));
-        }
       });
 
       // Recalcular posiciones basado en resultados
@@ -1419,8 +1410,8 @@
     }
 
     // ═══════════════════════════════════════════════════════════
-    // PARSEAR DETALLES DE GOLES (TheSportsDB)
-    // Formato: "45';Lozano;Assist:Herrera~67';Jiménez"
+    // PARSEAR EVENTOS (API custom — TheSportsDB no los incluye)
+    // Formato esperado: "45';Lozano;Assist:Herrera~67';Jiménez"
     // ═══════════════════════════════════════════════════════════
     _parsearDetallesGoles(detalle, equipo) {
       if (!detalle || detalle.trim() === '') return [];
