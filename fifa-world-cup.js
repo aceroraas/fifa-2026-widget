@@ -994,6 +994,8 @@
       this._timeoutColapsar = null;
       this._timeoutExpand = null;
       this._ultimoGoles = { local: null, visitante: null }; // track goals for animation
+      // Anchor side for expand/collapse
+      this._posicionLado = 'right'; // default: bottom-right
     }
 
     _inicializarLlave() {
@@ -1661,6 +1663,7 @@
       const rect = this.getBoundingClientRect();
       const centro = rect.left + rect.width / 2;
       const mitadPantalla = window.innerWidth / 2;
+      const margenBorde = 16; // px mínimos desde el borde
 
       [this._refs.idlePill, this._refs.livePill].forEach(pill => {
         pill.classList.remove('expand-right', 'expand-left');
@@ -1670,6 +1673,34 @@
           pill.classList.add('expand-left');
         }
       });
+
+      // Si está cerca del borde derecho, ajustar posición para que no se salga
+      if (rect.right + 200 > window.innerWidth) {
+        // Necesita espacio a la izquierda — usar right en vez de left
+        this._posicionLado = 'right';
+        this.style.left = 'auto';
+        this.style.right = (window.innerWidth - rect.right) + 'px';
+      } else if (rect.left < margenBorde) {
+        // Está a la izquierda — usar left
+        this._posicionLado = 'left';
+        this.style.right = 'auto';
+        this.style.left = rect.left + 'px';
+      }
+    }
+
+    _colapsar() {
+      this._colapsado = true;
+      this._refs.idlePill.classList.add('colapsado');
+      this._refs.livePill.classList.add('colapsado');
+
+      // Restaurar posición al colapsar
+      if (this._posicionLado === 'right') {
+        // Mantener right, limpiar left
+        this.style.left = 'auto';
+      } else {
+        // Mantener left, limpiar right
+        this.style.right = 'auto';
+      }
     }
 
     // Check if goals changed → trigger celebration
@@ -1779,6 +1810,23 @@
       document.removeEventListener('mouseup', this._onDragEndBound);
       document.removeEventListener('touchmove', this._onDragMoveBound);
       document.removeEventListener('touchend', this._onDragEndBound);
+
+      // Fijar posición según el lado de la pantalla
+      const rect = this.getBoundingClientRect();
+      const centro = rect.left + rect.width / 2;
+      const mitadPantalla = window.innerWidth / 2;
+
+      if (centro >= mitadPantalla) {
+        // Lado derecho — usar right para que el contenido fluya hacia adentro
+        this._posicionLado = 'right';
+        this.style.right = (window.innerWidth - rect.right) + 'px';
+        this.style.left = 'auto';
+      } else {
+        // Lado izquierdo — usar left
+        this._posicionLado = 'left';
+        this.style.left = rect.left + 'px';
+        this.style.right = 'auto';
+      }
 
       // Restaurar estado después del drag
       if (!this._wasColapsado && !this._dragMoved) {
