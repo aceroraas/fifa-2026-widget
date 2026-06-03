@@ -37,6 +37,7 @@ That's it. The widget appears as a floating pill in the bottom-right corner.
 | `theme` | `dark`, `light` | `dark` | Color theme |
 | `api-url` | Any valid URL | *(uses TheSportsDB)* | Custom API endpoint for match data |
 | `floating` | *(boolean attribute)* | — | Forces `position: fixed` behavior |
+| `draggable` | *(boolean attribute)* | — | Allows dragging the pill to any screen position |
 
 ### Examples
 
@@ -49,6 +50,9 @@ That's it. The widget appears as a floating pill in the bottom-right corner.
 
 <!-- Bottom-left, dark theme (explicit) -->
 <fifa-world-cup position="bottom-left" theme="dark"></fifa-world-cup>
+
+<!-- Draggable — arrastralo a cualquier esquina -->
+<fifa-world-cup floating draggable></fifa-world-cup>
 ```
 
 ## JavaScript API

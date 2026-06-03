@@ -524,6 +524,12 @@
     .widget.tarjeta-abierta .idle-pill,
     .widget.tarjeta-abierta .live-pill { opacity: 0; pointer-events: none; transform: translateY(10px); }
 
+    /* ── Draggable ── */
+    :host([draggable]) .idle-pill,
+    :host([draggable]) .live-pill { cursor: grab; }
+    :host([draggable]) .idle-pill:active,
+    :host([draggable]) .live-pill:active { cursor: grabbing; }
+
     /* ── Responsive ── */
     @media (max-width: 420px) {
       .tarjeta { width: calc(100vw - 2rem); max-height: 70vh; }
@@ -535,7 +541,7 @@
   // ═══════════════════════════════════════════════════════════
   class FifaWorldCup extends HTMLElement {
     static get observedAttributes() {
-      return ['position', 'theme', 'api-url', 'floating'];
+      return ['position', 'theme', 'api-url', 'floating', 'draggable'];
     }
 
     constructor() {
@@ -543,6 +549,9 @@
       this._grupoActivo = 'A';
       this._torneo = JSON.parse(JSON.stringify(TORNEO));
       this._apiOk = false;
+      this._dragging = false;
+      this._dragOffset = { x: 0, y: 0 };
+      this._dragMoved = false;
     }
 
     connectedCallback() {
@@ -661,6 +670,14 @@
       if (this._intervaloVivo) clearInterval(this._intervaloVivo);
       if (this._timeoutDia) clearTimeout(this._timeoutDia);
       document.removeEventListener('keydown', this._handleKeyDown);
+      if (this._onDragMoveBound) {
+        document.removeEventListener('mousemove', this._onDragMoveBound);
+        document.removeEventListener('touchmove', this._onDragMoveBound);
+      }
+      if (this._onDragEndBound) {
+        document.removeEventListener('mouseup', this._onDragEndBound);
+        document.removeEventListener('touchend', this._onDragEndBound);
+      }
     }
 
     attributeChangedCallback(name, oldVal, newVal) {
@@ -884,9 +901,21 @@
     _bindEvents() {
       const r = this._refs;
 
-      r.idlePill.addEventListener('click', () => this._abrirTarjeta());
-      r.livePill.addEventListener('click', () => this._abrirTarjeta());
+      // Click handlers — solo abrir si NO hubo arrastre
+      r.idlePill.addEventListener('click', (e) => {
+        if (!this._dragMoved) this._abrirTarjeta();
+        this._dragMoved = false;
+      });
+      r.livePill.addEventListener('click', (e) => {
+        if (!this._dragMoved) this._abrirTarjeta();
+        this._dragMoved = false;
+      });
       r.btnCerrar.addEventListener('click', () => this._cerrarTarjeta());
+
+      // Drag handlers (solo si tiene atributo draggable)
+      if (this.hasAttribute('draggable')) {
+        this._bindDrag();
+      }
 
       this._shadow.querySelectorAll('.pestana').forEach(tab => {
         tab.addEventListener('click', (e) => {
@@ -905,6 +934,77 @@
       };
 
       document.addEventListener('keydown', this._handleKeyDown);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // DRAG (atributo draggable)
+    // ═══════════════════════════════════════════════════════════
+    _bindDrag() {
+      const pills = [this._refs.idlePill, this._refs.livePill];
+      const onStart = (e) => this._onDragStart(e);
+
+      pills.forEach(pill => {
+        pill.addEventListener('mousedown', onStart);
+        pill.addEventListener('touchstart', onStart, { passive: false });
+      });
+
+      this._onDragMoveBound = (e) => this._onDragMove(e);
+      this._onDragEndBound = () => this._onDragEnd();
+    }
+
+    _getPointerPos(e) {
+      if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    _onDragStart(e) {
+      if (e.button && e.button !== 0) return; // solo click izquierdo
+
+      const pos = this._getPointerPos(e);
+      const rect = this.getBoundingClientRect();
+
+      this._dragOffset = { x: pos.x - rect.left, y: pos.y - rect.top };
+      this._dragMoved = false;
+      this._dragging = true;
+
+      // Fijar posición actual como top/left inline
+      this.style.position = 'fixed';
+      this.style.top = rect.top + 'px';
+      this.style.left = rect.left + 'px';
+      this.style.right = 'auto';
+      this.style.bottom = 'auto';
+
+      document.addEventListener('mousemove', this._onDragMoveBound);
+      document.addEventListener('mouseup', this._onDragEndBound);
+      document.addEventListener('touchmove', this._onDragMoveBound, { passive: false });
+      document.addEventListener('touchend', this._onDragEndBound);
+    }
+
+    _onDragMove(e) {
+      if (!this._dragging) return;
+      e.preventDefault();
+
+      const pos = this._getPointerPos(e);
+      const newX = pos.x - this._dragOffset.x;
+      const newY = pos.y - this._dragOffset.y;
+
+      // Detectar si se movió más de 5px (distinguir click de drag)
+      const rect = this.getBoundingClientRect();
+      const moved = Math.abs(newX - rect.left) + Math.abs(newY - rect.top);
+      if (moved > 5) this._dragMoved = true;
+
+      this.style.left = newX + 'px';
+      this.style.top = newY + 'px';
+    }
+
+    _onDragEnd() {
+      this._dragging = false;
+      document.removeEventListener('mousemove', this._onDragMoveBound);
+      document.removeEventListener('mouseup', this._onDragEndBound);
+      document.removeEventListener('touchmove', this._onDragMoveBound);
+      document.removeEventListener('touchend', this._onDragEndBound);
     }
 
     // ═══════════════════════════════════════════════════════════
