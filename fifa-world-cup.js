@@ -264,7 +264,7 @@
     /* ── Tarjeta expandida ── */
     .tarjeta {
       position: absolute;
-      width: 380px;
+      width: 520px;
       max-height: 80vh;
       background: var(--fwc-bg);
       border: 1px solid var(--fwc-border);
@@ -401,24 +401,19 @@
       cursor: pointer; position: relative;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
-      transition: color 0.2s;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
     }
-    .pestana:hover { color: var(--fwc-text); }
-    .pestana.activa { color: var(--fwc-accent); }
-    .pestana.activa::after {
-      content: '';
-      position: absolute;
-      bottom: -1px; left: 10%; right: 10%;
-      height: 3px;
-      background: var(--fwc-accent);
-      border-radius: 2px 2px 0 0;
-    }
+    .pestana:hover { color: var(--fwc-text); background: rgba(255,255,255,0.03); }
+    .pestana.activa { color: var(--fwc-accent); border-bottom-color: var(--fwc-accent); }
+    .pestana.activa::after { display: none; }
 
     /* Contenido */
     .contenido { flex: 1; overflow-y: auto; padding: 0; min-height: 320px; }
-    .contenido::-webkit-scrollbar { width: 4px; }
-    .contenido::-webkit-scrollbar-track { background: transparent; }
-    .contenido::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .contenido::-webkit-scrollbar { width: 6px; height: 6px; }
+    .contenido::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+    .contenido::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    .contenido::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
 
     .panel { display: none; opacity: 0; transition: opacity 0.25s ease; }
     .panel.activo { display: block; opacity: 1; }
@@ -439,14 +434,18 @@
       background: rgba(255,255,255,0.05); display: flex;
       align-items: center; justify-content: center;
       font-size: 1.5rem; border: 2px solid var(--fwc-border);
+      transition: all 0.2s;
     }
+    .escudo:hover { transform: scale(1.1); border-color: var(--fwc-accent); }
     .vs { font-size: 0.85rem; font-weight: 700; color: var(--fwc-accent); }
 
     .meta-partido { display: flex; flex-direction: column; gap: 0.4rem; }
     .meta-fila {
       display: flex; justify-content: space-between; font-size: 0.75rem;
-      padding: 0.3rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding: 0.35rem 0.4rem; border-radius: 4px;
+      transition: background 0.15s;
     }
+    .meta-fila:hover { background: rgba(255,255,255,0.03); }
     .meta-fila .etiqueta { color: var(--fwc-text-dim); }
     .meta-fila .valor { color: var(--fwc-text); font-weight: 500; }
 
@@ -493,7 +492,9 @@
       display: flex; align-items: center; gap: 0.5rem;
       padding: 0.35rem 0.5rem; font-size: 0.72rem;
       border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.15s;
     }
+    .evento-fila:hover { background: rgba(255,255,255,0.03); }
     .evento-fila .evento-minuto {
       color: var(--fwc-text-dim); font-weight: 500; min-width: 35px;
     }
@@ -503,6 +504,26 @@
       color: var(--fwc-text-dim); font-size: 0.65rem;
       background: rgba(255,255,255,0.05); padding: 0.1rem 0.4rem;
       border-radius: 3px;
+    }
+
+    /* Highlights button */
+    .btn-highlights {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.35rem 0.8rem;
+      background: rgba(255,0,0,0.1);
+      border: 1px solid rgba(255,0,0,0.2);
+      border-radius: 20px;
+      color: #ff6b6b;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-highlights:hover {
+      background: rgba(255,0,0,0.2);
+      border-color: rgba(255,0,0,0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255,0,0,0.15);
     }
 
     /* ── Panel: Posiciones ── */
@@ -537,7 +558,10 @@
     .tabla-posiciones tbody td {
       padding: 0.45rem 0.3rem; text-align: center; color: var(--fwc-text);
       border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.15s;
     }
+    .tabla-posiciones tbody tr { transition: background 0.15s; }
+    .tabla-posiciones tbody tr:hover { background: rgba(255,255,255,0.04); }
     .tabla-posiciones tbody td:first-child { text-align: center; font-weight: 600; color: var(--fwc-text-dim); width: 20px; }
     .tabla-posiciones tbody td:nth-child(2) { text-align: left; font-weight: 500; color: var(--fwc-text-bright); }
     .tabla-posiciones tbody tr:nth-child(1) td:first-child,
@@ -554,7 +578,9 @@
     .fila-calendario {
       display: flex; align-items: center; padding: 0.45rem 0.4rem;
       border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.75rem; gap: 0.5rem;
+      border-radius: 4px; transition: background 0.15s;
     }
+    .fila-calendario:hover { background: rgba(255,255,255,0.04); }
     .fila-calendario .hora { color: var(--fwc-text-dim); font-weight: 500; min-width: 45px; }
     .fila-calendario .equipos { flex: 1; color: var(--fwc-text); }
     .fila-calendario .marcador { color: var(--fwc-accent); font-weight: 600; }
@@ -570,8 +596,10 @@
       overflow-y: auto;
       max-height: 65vh;
     }
-    .panel-eliminatorias::-webkit-scrollbar { width: 4px; height: 4px; }
-    .panel-eliminatorias::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .panel-eliminatorias::-webkit-scrollbar { width: 6px; height: 6px; }
+    .panel-eliminatorias::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
+    .panel-eliminatorias::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 3px; }
+    .panel-eliminatorias::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
     .bracket-tree {
       display: flex;
@@ -781,7 +809,7 @@
     :host([draggable]) .live-pill:active { cursor: grabbing; }
 
     /* ── Responsive ── */
-    @media (max-width: 420px) {
+    @media (max-width: 560px) {
       .tarjeta { width: calc(100vw - 2rem); max-height: 70vh; }
       .tarjeta.hacia-abajo,
       .tarjeta.hacia-arriba { right: auto; left: 50%; transform: translateX(-50%); }
@@ -1629,12 +1657,24 @@
     _renderEventos(partido) {
       const r = this._refs;
       const eventos = partido.eventos || [];
+      const hayGoles = partido.golLocal > 0 || partido.golVisitante > 0;
+
+      // Highlight link — busca en YouTube los highlights del partido
+      const highlightQuery = encodeURIComponent(`${partido.local} vs ${partido.visitante} highlights ${partido.fecha || ''}`);
+      const highlightUrl = `https://www.youtube.com/results?search_query=${highlightQuery}`;
+      const highlightBtn = hayGoles
+        ? `<div style="text-align:center; padding:0.4rem 0;">
+            <a href="${highlightUrl}" target="_blank" rel="noopener" class="btn-highlights">
+              ▶ Ver highlights
+            </a>
+          </div>`
+        : '';
 
       if (eventos.length === 0) {
         // Sin eventos detallados — mostrar resumen básico si hay goles
-        if (partido.golLocal > 0 || partido.golVisitante > 0) {
+        if (hayGoles) {
           r.seccionEventos.style.display = 'block';
-          let html = '';
+          let html = highlightBtn;
           if (partido.golLocal > 0) {
             html += `<div class="evento-fila"><span class="evento-icono">⚽</span><span class="evento-texto">${partido.golLocal} gol(es) ${partido.local}</span><span class="evento-equipo">Local</span></div>`;
           }
@@ -1660,7 +1700,7 @@
 
       const iconos = { gol: '⚽', amarilla: '🟨', roja: '🟥', sustitucion: '🔄' };
 
-      r.contenidoEventos.innerHTML = ordenados.map(ev => {
+      r.contenidoEventos.innerHTML = highlightBtn + ordenados.map(ev => {
         const icono = iconos[ev.tipo] || '•';
         const texto = ev.tipo === 'gol'
           ? `${ev.jugador}${ev.asistencia ? ` (${ev.asistencia})` : ''}`

@@ -104,6 +104,20 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+    .btn:hover {
+      background: rgba(79,195,247,0.2);
+      border-color: rgba(79,195,247,0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79,195,247,0.15);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn.active {
+      background: rgba(79,195,247,0.25);
+      border-color: #4fc3f7;
+      box-shadow: 0 0 0 1px rgba(79,195,247,0.3);
+    }
 
     .btn:hover {
       background: rgba(79,195,247,0.2);
@@ -157,10 +171,12 @@
     <button class="btn" onclick="setState('live')">🔴 EN VIVO</button>
     <button class="btn" onclick="setState('live-goals')">⚽ EN VIVO con goles</button>
     <button class="btn" onclick="setState('finished')">✅ Partido finalizado</button>
+    <button class="btn" onclick="setState('groups-done')">📊 Grupos completados</button>
     <button class="btn" onclick="setState('tournament-done')">🏆 Torneo terminado</button>
-    <button class="btn" onclick="setState('ko-placeholders')">🏆 Eliminatorias (placeholders)</button>
-    <button class="btn" onclick="setState('ko-live')">🏆 Eliminatorias (en curso)</button>
+    <button class="btn" onclick="setState('ko-placeholders')">🏟️ Eliminatorias (placeholders)</button>
+    <button class="btn" onclick="setState('ko-live')">⚡ Eliminatorias (en curso)</button>
     <button class="btn" onclick="setState('ko-finished')">🏆 Eliminatorias (finalizado)</button>
+    <button class="btn" onclick="setState('mixed')">🔀 Mixto: grupos + eliminatorias</button>
     <button class="btn" onclick="setState('light')">☀️ Tema claro</button>
     <button class="btn" onclick="setState('top-left')">↖️ Posición top-left</button>
   </div>
@@ -287,6 +303,62 @@
             p.golVisitante = mockResults[i][1];
           });
           widget._recalcularPosiciones();
+          break;
+
+        case 'groups-done':
+          // All group matches finished, knockout still placeholders
+          const groupResults = [
+            [2, 1], [3, 0], [1, 1], [0, 2], [4, 1], [2, 2],
+            [1, 0], [3, 1], [2, 0], [1, 3], [0, 0], [2, 1],
+            [1, 1], [3, 2], [2, 0], [1, 0], [4, 0], [2, 3],
+            [1, 2], [0, 1], [3, 0], [2, 2], [1, 0], [2, 1]
+          ];
+          t.partidos.forEach((p, i) => {
+            p.estado = 'finalizado';
+            p.golLocal = groupResults[i][0];
+            p.golVisitante = groupResults[i][1];
+          });
+          widget._recalcularPosiciones();
+          // Initialize knockout placeholders
+          widget._inicializarLlave();
+          break;
+
+        case 'mixed':
+          // Groups done + some knockout matches played
+          t.partidos.forEach((p, i) => {
+            p.estado = 'finalizado';
+            p.golLocal = groupResults[i][0];
+            p.golVisitante = groupResults[i][1];
+          });
+          widget._recalcularPosiciones();
+          widget._inicializarLlave();
+          // R32: first 8 matches finished
+          const mixedR32 = [
+            { l: 'México', v: 'Brasil', gl: 2, gv: 1 },
+            { l: 'Canadá', v: 'Alemania', gl: 1, gv: 3 },
+            { l: 'Francia', v: 'Senegal', gl: 4, gv: 0 },
+            { l: 'Bélgica', v: 'Uruguay', gl: 2, gv: 1 },
+            { l: 'Argentina', v: 'Colombia', gl: 3, gv: 2 },
+            { l: 'Países Bajos', v: 'Japón', gl: 2, gv: 0 },
+            { l: 'España', v: 'Croacia', gl: 1, gv: 0 },
+            { l: 'Portugal', v: 'Marruecos', gl: 1, gv: 1 }
+          ];
+          for (let i = 0; i < 8; i++) {
+            const m = mixedR32[i];
+            t.llave.treintaidosavos[i] = {
+              ...t.llave.treintaidosavos[i],
+              local: m.l, visitante: m.v,
+              golLocal: m.gl, golVisitante: m.gv,
+              estado: 'finalizado', fecha: `2026-06-${28 + Math.floor(i/4)}`
+            };
+          }
+          // R16: first match in progress
+          t.llave.dieciseisavos[0] = {
+            ...t.llave.dieciseisavos[0],
+            local: 'México', visitante: 'Alemania',
+            golLocal: 1, golVisitante: 1,
+            estado: 'en-vivo', fecha: '2026-07-03'
+          };
           break;
 
         case 'ko-placeholders':
@@ -449,7 +521,7 @@
       });
 
       // Knockout bracket info
-      if (state === 'ko-placeholders' || state === 'ko-live' || state === 'ko-finished') {
+      if (state === 'ko-placeholders' || state === 'ko-live' || state === 'ko-finished' || state === 'groups-done' || state === 'mixed') {
         const rondas = [
           { key: 'treintaidosavos', label: 'R32' },
           { key: 'dieciseisavos', label: 'R16' },
