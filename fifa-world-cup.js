@@ -249,9 +249,40 @@
       flex-direction: column;
       align-items: flex-end;
       gap: 0.5rem;
+      position: relative;
     }
 
-    /* ── Pill en vivo ── */
+    /* ── Tarjeta expandida ── */
+    .tarjeta {
+      position: absolute;
+      width: 380px;
+      max-height: 80vh;
+      background: var(--fwc-bg);
+      border: 1px solid var(--fwc-border);
+      border-radius: var(--fwc-radius);
+      box-shadow: 0 16px 50px rgba(0,0,0,0.5);
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+    /* Abrir hacia ABAJO (default) */
+    .tarjeta.hacia-abajo {
+      top: calc(100% + 0.5rem);
+      right: 0;
+      transform: translateY(-10px) scale(0.95);
+    }
+    .tarjeta.hacia-abajo.visible { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+    /* Abrir hacia ARRIBA */
+    .tarjeta.hacia-arriba {
+      bottom: calc(100% + 0.5rem);
+      right: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    .tarjeta.hacia-arriba.visible { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
     .live-pill {
       background: linear-gradient(135deg, #1a5c2e, #0d3318);
       border: 1px solid rgba(76,175,80,0.4);
@@ -322,24 +353,6 @@
 
     :host([theme="light"]) .idle-pill .texto-cuenta { color: rgba(0,0,0,0.6); }
     :host([theme="light"]) .idle-pill:hover .texto-cuenta { color: #333; }
-
-    /* ── Tarjeta expandida ── */
-    .tarjeta {
-      width: 380px;
-      max-height: 80vh;
-      background: var(--fwc-bg);
-      border: 1px solid var(--fwc-border);
-      border-radius: var(--fwc-radius);
-      box-shadow: 0 16px 50px rgba(0,0,0,0.5);
-      overflow: hidden;
-      transform: translateY(10px) scale(0.95);
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
-      display: flex;
-      flex-direction: column;
-    }
-    .tarjeta.visible { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
 
     .cabecera {
       background: linear-gradient(135deg, #1a3a5c, #0d2137);
@@ -533,6 +546,10 @@
     /* ── Responsive ── */
     @media (max-width: 420px) {
       .tarjeta { width: calc(100vw - 2rem); max-height: 70vh; }
+      .tarjeta.hacia-abajo,
+      .tarjeta.hacia-arriba { right: auto; left: 50%; transform: translateX(-50%); }
+      .tarjeta.hacia-abajo.visible { transform: translateX(-50%) translateY(0) scale(1); }
+      .tarjeta.hacia-arriba.visible { transform: translateX(-50%) translateY(0) scale(1); }
     }
   `;
 
@@ -1070,8 +1087,29 @@
     // ABRIR / CERRAR
     // ═══════════════════════════════════════════════════════════
     _abrirTarjeta() {
-      this._refs.widget.classList.add('tarjeta-abierta');
-      this._refs.tarjeta.classList.add('visible');
+      const r = this._refs;
+      r.widget.classList.add('tarjeta-abierta');
+
+      // Calcular dirección: ¿hay más espacio arriba o abajo?
+      const rect = this.getBoundingClientRect();
+      const espacioAbajo = window.innerHeight - rect.bottom;
+      const espacioArriba = rect.top;
+      const tarjetaAlturaEstimada = 480; // ~80vh max
+
+      r.tarjeta.classList.remove('hacia-abajo', 'hacia-arriba');
+
+      if (espacioAbajo < tarjetaAlturaEstimada && espacioArriba > espacioAbajo) {
+        // Poco espacio abajo, más espacio arriba → abrir hacia arriba
+        r.tarjeta.classList.add('hacia-arriba');
+      } else {
+        // Espacio suficiente abajo → abrir hacia abajo (default)
+        r.tarjeta.classList.add('hacia-abajo');
+      }
+
+      // Forzar reflow antes de agregar visible para que la transición funcione
+      void r.tarjeta.offsetHeight;
+      r.tarjeta.classList.add('visible');
+
       this._renderPosiciones();
       this._renderCalendario();
       this._renderEliminatorias();
@@ -1079,7 +1117,10 @@
 
     _cerrarTarjeta() {
       this._refs.tarjeta.classList.remove('visible');
-      setTimeout(() => this._refs.widget.classList.remove('tarjeta-abierta'), 300);
+      setTimeout(() => {
+        this._refs.widget.classList.remove('tarjeta-abierta');
+        this._refs.tarjeta.classList.remove('hacia-abajo', 'hacia-arriba');
+      }, 300);
     }
 
     // ═══════════════════════════════════════════════════════════
