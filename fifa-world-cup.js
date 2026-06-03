@@ -311,18 +311,24 @@
 
     /* Live pill collapsed */
     .live-pill.colapsado {
-      padding: 0.5rem;
+      width: 40px;
+      height: 40px;
+      padding: 0;
       border-radius: 50%;
-      max-width: 48px;
+      max-width: 40px;
+      justify-content: center;
+      align-items: center;
     }
     .live-pill.colapsado .live-equipos,
     .live-pill.colapsado .live-marcador,
     .live-pill.colapsado .live-minuto {
+      width: 0;
       max-width: 0;
       opacity: 0;
       margin: 0;
       padding: 0;
       overflow: hidden;
+      flex-shrink: 1;
     }
 
     /* Goal celebration animation */
@@ -362,10 +368,12 @@
       font-size: 1rem;
       animation: giroLento 4s linear infinite;
       flex-shrink: 0;
+      line-height: 1;
     }
     .live-pill:hover .pelota { animation: girar 0.8s linear infinite; }
     .live-pill.colapsado .pelota {
       animation: giroLento 60s linear infinite;
+      font-size: 1.2rem;
     }
     .live-pill.colapsado .live-dot { display: none; }
 
