@@ -181,10 +181,43 @@ When a match status is `'en-vivo'`, the idle countdown pill is replaced by a gre
 
 ```
 fifa-widget/
-├── fifa-world-cup.js   # Web Component (IIFE, ~1160 lines)
-├── fifa-card.html      # Demo page with examples
-└── README.md           # This file
+├── fifa-world-cup.js     # Web Component (IIFE, ~1320 lines)
+├── fifa-card.html        # Demo page with examples
+├── fifa-demo.html        # Interactive state demo with mock data
+├── fifa-world-cup.test.js # Unit tests (54 tests, no dependencies)
+└── README.md             # This file
 ```
+
+## Testing
+
+Run unit tests with no dependencies:
+
+```bash
+node fifa-world-cup.test.js
+```
+
+Tests cover:
+- Team name mapping (MAPA_EQUIPOS) — 13 tests
+- Tournament data structure (TORNEO) — 11 tests
+- Position recalculation logic — 7 tests
+- Next match finder — 5 tests
+- Team search — 5 tests
+- Position sorting (points + goal difference) — 2 tests
+- Cache sanitization (strips live data) — 6 tests
+- Match schedule validation — 5 tests
+
+## Interactive Demo
+
+Open `fifa-demo.html` in a browser to see the widget in different states:
+
+- **Idle** — countdown pill
+- **Same day** — hours before kickoff
+- **Live** — en vivo with score
+- **Live with goals** — multiple live matches
+- **Finished** — completed matches with recalculated standings
+- **Tournament done** — all 24 matches finished
+- **Light theme** — alternate color scheme
+- **Top-left position** — different corner placement
 
 ## Browser Support
 

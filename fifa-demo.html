@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIFA Widget — Demo de Estados</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: #0f1923;
+      color: #ccddee;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: #4fc3f7; }
+    .subtitle { color: #556677; margin-bottom: 2rem; }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 2rem;
+      max-width: 1400px;
+    }
+
+    .demo-card {
+      background: #1a2332;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .demo-label {
+      padding: 0.8rem 1.2rem;
+      background: rgba(79,195,247,0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #4fc3f7;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .demo-label .badge {
+      font-size: 0.65rem;
+      background: rgba(79,195,247,0.2);
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      color: #8899aa;
+      font-weight: 500;
+    }
+
+    .demo-stage {
+      position: relative;
+      height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(79,195,247,0.03) 0%, transparent 70%),
+        linear-gradient(135deg, #0d1520 0%, #1a2332 100%);
+    }
+
+    .demo-stage::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.02) 1px, transparent 1px),
+        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+
+    .demo-stage fifa-world-cup {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Force widget to be visible in demo */
+    .demo-stage fifa-world-cup {
+      --fwc-bg: #1a2332;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      margin-top: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      max-width: 1400px;
+    }
+
+    .btn {
+      padding: 0.6rem 1.2rem;
+      background: rgba(79,195,247,0.1);
+      border: 1px solid rgba(79,195,247,0.2);
+      border-radius: 8px;
+      color: #4fc3f7;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(79,195,247,0.2);
+      border-color: rgba(79,195,247,0.4);
+    }
+
+    .btn.active {
+      background: rgba(79,195,247,0.25);
+      border-color: #4fc3f7;
+    }
+
+    .section-title {
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: #4fc3f7;
+      border-bottom: 1px solid rgba(79,195,247,0.2);
+      padding-bottom: 0.5rem;
+    }
+
+    .test-output {
+      margin-top: 2rem;
+      max-width: 1400px;
+    }
+
+    .test-output pre {
+      background: #0d1520;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 1rem;
+      font-size: 0.75rem;
+      color: #81c784;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🏆 FIFA Widget — Demo de Estados</h1>
+  <p class="subtitle">Muestras de cada momento del componente con datos mock.</p>
+
+  <!-- ═══════════════════════════════════════════
+       SINGLE WIDGET — switch states with buttons
+       ═══════════════════════════════════════════ -->
+  <script src="fifa-world-cup.js"></script>
+
+  <div class="controls">
+    <button class="btn active" onclick="setState('idle')">⏳ Idle (cuenta regresiva)</button>
+    <button class="btn" onclick="setState('idle-sameday')">📅 Mismo día, horas antes</button>
+    <button class="btn" onclick="setState('live')">🔴 EN VIVO</button>
+    <button class="btn" onclick="setState('live-goals')">⚽ EN VIVO con goles</button>
+    <button class="btn" onclick="setState('finished')">✅ Partido finalizado</button>
+    <button class="btn" onclick="setState('tournament-done')">🏆 Torneo terminado</button>
+    <button class="btn" onclick="setState('light')">☀️ Tema claro</button>
+    <button class="btn" onclick="setState('top-left')">↖️ Posición top-left</button>
+  </div>
+
+  <div style="margin-top: 1rem;">
+    <fifa-world-cup id="demoWidget" floating draggable></fifa-world-cup>
+  </div>
+
+  <div class="test-output">
+    <div class="section-title">Estado actual del widget</div>
+    <pre id="stateOutput">Cargando...</pre>
+  </div>
+
+  <script>
+    const widget = document.getElementById('demoWidget');
+
+    function setState(state) {
+      // Reset all buttons
+      document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const t = widget.obtenerDatos();
+
+      // Reset everything first
+      t.partidos.forEach(p => {
+        p.estado = 'programado';
+        p.golLocal = null;
+        p.golVisitante = null;
+        delete p.minuto;
+      });
+      for (const grupo of Object.values(t.grupos)) {
+        grupo.forEach(e => {
+          e.pj = 0; e.pg = 0; e.pe = 0; e.pp = 0;
+          e.gf = 0; e.gc = 0; e.pts = 0;
+        });
+      }
+
+      switch (state) {
+        case 'idle':
+          // Default state — all matches scheduled, far in the future
+          // Nothing to change, just use defaults
+          break;
+
+        case 'idle-sameday':
+          // Change first match to today, 4 hours from now
+          const today = new Date();
+          const todayStr = today.toISOString().split('T')[0];
+          t.partidos[0].fecha = todayStr;
+          const in4Hours = new Date(Date.now() + 4 * 60 * 60 * 1000);
+          t.partidos[0].hora = in4Hours.toISOString().split('T')[1].substring(0, 5);
+          break;
+
+        case 'live':
+          // First match is LIVE, 0-0, minute 23
+          t.partidos[0].estado = 'en-vivo';
+          t.partidos[0].golLocal = 0;
+          t.partidos[0].golVisitante = 0;
+          t.partidos[0].minuto = "23'";
+          break;
+
+        case 'live-goals':
+          // First match is LIVE, México 2 - 1 Sudáfrica, minute 67
+          t.partidos[0].estado = 'en-vivo';
+          t.partidos[0].golLocal = 2;
+          t.partidos[0].golVisitante = 1;
+          t.partidos[0].minuto = "67'";
+          // Second match also live: Corea 0 - 0 Rep Checa, minute 12
+          t.partidos[1].estado = 'en-vivo';
+          t.partidos[1].golLocal = 0;
+          t.partidos[1].golVisitante = 0;
+          t.partidos[1].minuto = "12'";
+          break;
+
+        case 'finished':
+          // First 4 matches finished
+          t.partidos[0].estado = 'finalizado';
+          t.partidos[0].golLocal = 2;
+          t.partidos[0].golVisitante = 1;
+
+          t.partidos[1].estado = 'finalizado';
+          t.partidos[1].golLocal = 3;
+          t.partidos[1].golVisitante = 0;
+
+          t.partidos[2].estado = 'finalizado';
+          t.partidos[2].golLocal = 1;
+          t.partidos[2].golVisitante = 1;
+
+          t.partidos[3].estado = 'finalizado';
+          t.partidos[3].golLocal = 0;
+          t.partidos[3].golVisitante = 2;
+
+          // Recalculate positions
+          widget._recalcularPosiciones();
+          break;
+
+        case 'tournament-done':
+          // All matches finished with mock results
+          const mockResults = [
+            [2, 1], [3, 0], [1, 1], [0, 2], [4, 1], [2, 2],
+            [1, 0], [3, 1], [2, 0], [1, 3], [0, 0], [2, 1],
+            [1, 1], [3, 2], [2, 0], [1, 0], [4, 0], [2, 3],
+            [1, 2], [0, 1], [3, 0], [2, 2], [1, 0], [2, 1]
+          ];
+          t.partidos.forEach((p, i) => {
+            p.estado = 'finalizado';
+            p.golLocal = mockResults[i][0];
+            p.golVisitante = mockResults[i][1];
+          });
+          widget._recalcularPosiciones();
+          break;
+
+        case 'light':
+          widget.setAttribute('theme', 'light');
+          break;
+
+        case 'top-left':
+          widget.setAttribute('theme', 'dark');
+          widget.setAttribute('position', 'top-left');
+          break;
+      }
+
+      // Refresh UI
+      widget._actualizarCuenta();
+      widget._verificarEnVivo();
+
+      // Show state info
+      const output = document.getElementById('stateOutput');
+      const liveMatches = t.partidos.filter(p => p.estado === 'en-vivo');
+      const finishedMatches = t.partidos.filter(p => p.estado === 'finalizado');
+
+      let info = `Estado: "${state}"\n`;
+      info += `Partidos en vivo: ${liveMatches.length}\n`;
+      info += `Partidos finalizados: ${finishedMatches.length}\n`;
+
+      if (liveMatches.length > 0) {
+        info += '\n── EN VIVO ──\n';
+        liveMatches.forEach(m => {
+          info += `  ${m.local} ${m.golLocal} - ${m.golVisitante} ${m.visitante} (${m.minuto || 'EN VIVO'})\n`;
+        });
+      }
+
+      if (finishedMatches.length > 0) {
+        info += '\n── FINALIZADOS (primeros 4) ──\n';
+        finishedMatches.slice(0, 4).forEach(m => {
+          info += `  ${m.local} ${m.golLocal} - ${m.golVisitante} ${m.visitante}\n`;
+        });
+      }
+
+      info += '\n── POSICIONES GRUPO A ──\n';
+      const grupoA = [...t.grupos.A].sort((a, b) => b.pts - a.pts || (b.gf - b.gc) - (a.gf - a.gc));
+      info += `  #  Equipo           PJ  PG  PE  PP  GF  GC  DG  Pts\n`;
+      grupoA.forEach((e, i) => {
+        const dg = e.gf - e.gc;
+        const dgStr = dg > 0 ? `+${dg}` : `${dg}`;
+        info += `  ${i + 1}  ${e.bandera} ${e.equipo.padEnd(15)} ${e.pj}   ${e.pg}   ${e.pe}   ${e.pp}   ${e.gf}   ${e.gc}  ${dgStr.padStart(3)}  ${e.pts}\n`;
+      });
+
+      info += `\nTema: ${widget.getAttribute('theme') || 'dark'}\n`;
+      info += `Posición: ${widget.getAttribute('position') || 'bottom-right'}\n`;
+      info += `Arrastrable: ${widget.hasAttribute('draggable') ? 'sí' : 'no'}`;
+
+      output.textContent = info;
+    }
+
+    // Show initial state
+    setTimeout(() => {
+      setState('idle');
+    }, 500);
+  </script>
+
+</body>
+</html>
