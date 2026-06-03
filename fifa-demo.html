@@ -158,6 +158,9 @@
     <button class="btn" onclick="setState('live-goals')">⚽ EN VIVO con goles</button>
     <button class="btn" onclick="setState('finished')">✅ Partido finalizado</button>
     <button class="btn" onclick="setState('tournament-done')">🏆 Torneo terminado</button>
+    <button class="btn" onclick="setState('ko-placeholders')">🏆 Eliminatorias (placeholders)</button>
+    <button class="btn" onclick="setState('ko-live')">🏆 Eliminatorias (en curso)</button>
+    <button class="btn" onclick="setState('ko-finished')">🏆 Eliminatorias (finalizado)</button>
     <button class="btn" onclick="setState('light')">☀️ Tema claro</button>
     <button class="btn" onclick="setState('top-left')">↖️ Posición top-left</button>
   </div>
@@ -286,6 +289,119 @@
           widget._recalcularPosiciones();
           break;
 
+        case 'ko-placeholders':
+          // Show bracket with FIFA slot notation (placeholders before any API data)
+          widget._inicializarLlave();
+          break;
+
+        case 'ko-live':
+          // Show bracket with some matches having scores (mixed state)
+          widget._inicializarLlave();
+          // R32: update first 4 matches with live/finished scores
+          t.llave.treintaidosavos[0] = { ...t.llave.treintaidosavos[0],
+            local: 'México', visitante: 'Brasil', golLocal: 2, golVisitante: 1,
+            estado: 'finalizado', fecha: '2026-06-28', sede: 'Estadio Azteca, CDMX'
+          };
+          t.llave.treintaidosavos[1] = { ...t.llave.treintaidosavos[1],
+            local: 'Canadá', visitante: 'Alemania', golLocal: 1, golVisitante: 3,
+            estado: 'finalizado', fecha: '2026-06-28', sede: 'BMO Field, Toronto'
+          };
+          t.llave.treintaidosavos[2] = { ...t.llave.treintaidosavos[2],
+            local: 'Francia', visitante: 'Senegal', golLocal: 0, golVisitante: 0,
+            estado: 'en-vivo', fecha: '2026-06-28', sede: 'SoFi Stadium, Los Ángeles'
+          };
+          t.llave.treintaidosavos[3] = { ...t.llave.treintaidosavos[3],
+            local: 'Argentina', visitante: 'Colombia', golLocal: 1, golVisitante: 0,
+            estado: 'finalizado', fecha: '2026-06-29', sede: 'Estadio Azteca, CDMX'
+          };
+          // R16: update first match
+          t.llave.dieciseisavos[0] = { ...t.llave.dieciseisavos[0],
+            local: 'México', visitante: 'Alemania', golLocal: 2, golVisitante: 2,
+            estado: 'en-vivo', fecha: '2026-07-03', sede: 'MetLife Stadium, Nueva York'
+          };
+          break;
+
+        case 'ko-finished':
+          // Show a complete bracket path with a winner
+          widget._inicializarLlave();
+          // Round of 32 — all 16 matches finished
+          const r32teams = [
+            { l: 'México', v: 'Brasil', gl: 2, gv: 1 },
+            { l: 'Canadá', v: 'Alemania', gl: 1, gv: 3 },
+            { l: 'Francia', v: 'Senegal', gl: 4, gv: 0 },
+            { l: 'Bélgica', v: 'Uruguay', gl: 1, gv: 1 },
+            { l: 'Argentina', v: 'Colombia', gl: 3, gv: 2 },
+            { l: 'Países Bajos', v: 'Japón', gl: 2, gv: 0 },
+            { l: 'España', v: 'Croacia', gl: 1, gv: 0 },
+            { l: 'Portugal', v: 'Marruecos', gl: 2, gv: 2 },
+            { l: 'Inglaterra', v: 'Senegal', gl: 3, gv: 1 },
+            { l: 'EE.UU.', v: 'Corea del Sur', gl: 2, gv: 0 },
+            { l: 'Brasil', v: 'Ecuador', gl: 4, gv: 1 },
+            { l: 'Alemania', v: 'Turquía', gl: 3, gv: 0 },
+            { l: 'Francia', v: 'Uruguay', gl: 2, gv: 1 },
+            { l: 'Argentina', v: 'Croacia', gl: 3, gv: 0 },
+            { l: 'Países Bajos', v: 'España', gl: 1, gv: 2 },
+            { l: 'Portugal', v: 'Inglaterra', gl: 0, gv: 2 }
+          ];
+          for (let i = 0; i < 16; i++) {
+            const m = r32teams[i];
+            t.llave.treintaidosavos[i] = {
+              ...t.llave.treintaidosavos[i],
+              local: m.l, visitante: m.v,
+              golLocal: m.gl, golVisitante: m.gv,
+              estado: 'finalizado', fecha: `2026-06-${28 + Math.floor(i/4)}`
+            };
+          }
+          // Round of 16 — 8 matches (winners from R32)
+          const r16winners = ['México', 'Alemania', 'Francia', 'Bélgica', 'Argentina', 'Países Bajos', 'España', 'Portugal', 'Inglaterra', 'EE.UU.', 'Brasil', 'Alemania', 'Francia', 'Argentina', 'España', 'Inglaterra'];
+          for (let i = 0; i < 8; i++) {
+            t.llave.dieciseisavos[i] = {
+              ...t.llave.dieciseisavos[i],
+              local: r16winners[i*2], visitante: r16winners[i*2+1],
+              golLocal: i % 3 === 0 ? 2 : 1, golVisitante: i % 3 === 0 ? 1 : 0,
+              estado: 'finalizado', fecha: `2026-07-0${3 + Math.floor(i/4)}`
+            };
+          }
+          // Quarter-finals — 4 matches
+          const qfwinners = ['Alemania', 'Francia', 'Argentina', 'Portugal', 'Brasil', 'Francia', 'Argentina', 'Inglaterra'];
+          for (let i = 0; i < 4; i++) {
+            t.llave.cuartos[i] = {
+              ...t.llave.cuartos[i],
+              local: qfwinners[i*2], visitante: qfwinners[i*2+1],
+              golLocal: i % 2 === 0 ? 2 : 3, golVisitante: 1,
+              estado: 'finalizado', fecha: `2026-07-0${9 + Math.floor(i/2)}`
+            };
+          }
+          // Semi-finals — 2 matches
+          t.llave.semis[0] = {
+            ...t.llave.semis[0],
+            local: 'Francia', visitante: 'Argentina',
+            golLocal: 2, golVisitante: 2,
+            estado: 'finalizado', fecha: '2026-07-14'
+          };
+          t.llave.semis[1] = {
+            ...t.llave.semis[1],
+            local: 'Brasil', visitante: 'Inglaterra',
+            golLocal: 1, golVisitante: 3,
+            estado: 'finalizado', fecha: '2026-07-15'
+          };
+          // Third Place
+          t.llave.tercerPuesto = {
+            ...t.llave.tercerPuesto,
+            local: 'Argentina', visitante: 'Brasil',
+            golLocal: 3, golVisitante: 1,
+            estado: 'finalizado', fecha: '2026-07-18'
+          };
+          // Final — Argentina wins!
+          t.llave.final = {
+            ...t.llave.final,
+            local: 'Francia', visitante: 'Inglaterra',
+            golLocal: 0, golVisitante: 2,
+            estado: 'finalizado', fecha: '2026-07-19',
+            sede: 'MetLife Stadium, Nueva York'
+          };
+          break;
+
         case 'light':
           widget.setAttribute('theme', 'light');
           break;
@@ -331,6 +447,29 @@
         const dgStr = dg > 0 ? `+${dg}` : `${dg}`;
         info += `  ${i + 1}  ${e.bandera} ${e.equipo.padEnd(15)} ${e.pj}   ${e.pg}   ${e.pe}   ${e.pp}   ${e.gf}   ${e.gc}  ${dgStr.padStart(3)}  ${e.pts}\n`;
       });
+
+      // Knockout bracket info
+      if (state === 'ko-placeholders' || state === 'ko-live' || state === 'ko-finished') {
+        const rondas = [
+          { key: 'treintaidosavos', label: 'R32' },
+          { key: 'dieciseisavos', label: 'R16' },
+          { key: 'cuartos', label: 'QF' },
+          { key: 'semis', label: 'SF' },
+          { key: 'tercerPuesto', label: '3rd' },
+          { key: 'final', label: 'Final' }
+        ];
+        info += '\n── ELIMINATORIAS ──\n';
+        for (const ronda of rondas) {
+          const data = t.llave[ronda.key];
+          if (Array.isArray(data)) {
+            const filled = data.filter(m => m.golLocal !== null || m.golVisitante !== null || m.local.indexOf('Ganador') === -1 && !m.local.match(/^\d/));
+            info += `  ${ronda.label}: ${filled.length}/${data.length} matches with data\n`;
+          } else if (data) {
+            const hasData = data.golLocal !== null || data.local !== 'Por definir';
+            info += `  ${ronda.label}: ${data.local} vs ${data.visitante}${hasData ? ` (${data.golLocal ?? '-'}-${data.golVisitante ?? '-'})` : ' (TBD)'}\n`;
+          }
+        }
+      }
 
       info += `\nTema: ${widget.getAttribute('theme') || 'dark'}\n`;
       info += `Posición: ${widget.getAttribute('position') || 'bottom-right'}\n`;

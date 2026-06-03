@@ -192,6 +192,15 @@
     'Ghana': 'Ghana'
   };
 
+  const MAPEO_RONDAS = {
+    'Round of 32': 'treintaidosavos',
+    'Round of 16': 'dieciseisavos',
+    'Quarter-Final': 'cuartos',
+    'Semi-Final': 'semis',
+    '3rd Place': 'tercerPuesto',
+    'Final': 'final'
+  };
+
   // ═══════════════════════════════════════════════════════════
   // CONFIGURACIÓN DE API
   // ═══════════════════════════════════════════════════════════
@@ -620,11 +629,62 @@
       super();
       this._grupoActivo = 'A';
       this._torneo = JSON.parse(JSON.stringify(TORNEO));
+      this._inicializarLlave();
       this._apiOk = false;
       this._dragging = false;
       this._dragOffset = { x: 0, y: 0 };
       this._dragMoved = false;
       this._desdeCache = false;
+    }
+
+    _inicializarLlave() {
+      const ll = this._torneo.llave;
+      // Guard: skip if already populated
+      if (ll.treintaidosavos.length > 0) return;
+
+      // Round of 32 — 16 matches with FIFA 2026 slot notation
+      ll.treintaidosavos = [
+        { local: '1A', visitante: '3C/D/E/F', fecha: '2026-06-28' },
+        { local: '2B', visitante: '2E', fecha: '2026-06-28' },
+        { local: '1C', visitante: '3A/B/F/H', fecha: '2026-06-28' },
+        { local: '1D', visitante: '3B/E/F/I', fecha: '2026-06-29' },
+        { local: '1E', visitante: '3A/B/C/D', fecha: '2026-06-29' },
+        { local: '1F', visitante: '3A/B/C', fecha: '2026-06-29' },
+        { local: '1G', visitante: '3C/D/E/F', fecha: '2026-06-29' },
+        { local: '2H', visitante: '2G', fecha: '2026-06-30' },
+        { local: '1I', visitante: '3A/B/C/D', fecha: '2026-06-30' },
+        { local: '2L', visitante: '2K', fecha: '2026-06-30' },
+        { local: '1J', visitante: '3I/J/K/L', fecha: '2026-06-30' },
+        { local: '1K', visitante: '3G/H/I/J', fecha: '2026-07-01' },
+        { local: '2F', visitante: '2J', fecha: '2026-07-01' },
+        { local: '2A', visitante: '2D', fecha: '2026-07-01' },
+        { local: '1B', visitante: '3A/D/E/F', fecha: '2026-07-01' },
+        { local: '2C', visitante: '2I', fecha: '2026-07-02' }
+      ];
+      // Round of 16 — 8 matches
+      ll.dieciseisavos = [
+        { local: 'Ganador R32 #1', visitante: 'Ganador R32 #2', fecha: '2026-07-03' },
+        { local: 'Ganador R32 #3', visitante: 'Ganador R32 #4', fecha: '2026-07-03' },
+        { local: 'Ganador R32 #5', visitante: 'Ganador R32 #6', fecha: '2026-07-04' },
+        { local: 'Ganador R32 #7', visitante: 'Ganador R32 #8', fecha: '2026-07-04' },
+        { local: 'Ganador R32 #9', visitante: 'Ganador R32 #10', fecha: '2026-07-04' },
+        { local: 'Ganador R32 #11', visitante: 'Ganador R32 #12', fecha: '2026-07-05' },
+        { local: 'Ganador R32 #13', visitante: 'Ganador R32 #14', fecha: '2026-07-05' },
+        { local: 'Ganador R32 #15', visitante: 'Ganador R32 #16', fecha: '2026-07-05' }
+      ];
+      // Quarter-finals — 4 matches
+      ll.cuartos = [
+        { local: 'Ganador R16 #1', visitante: 'Ganador R16 #2', fecha: '2026-07-09' },
+        { local: 'Ganador R16 #3', visitante: 'Ganador R16 #4', fecha: '2026-07-09' },
+        { local: 'Ganador R16 #5', visitante: 'Ganador R16 #6', fecha: '2026-07-10' },
+        { local: 'Ganador R16 #7', visitante: 'Ganador R16 #8', fecha: '2026-07-10' }
+      ];
+      // Semi-finals — 2 matches
+      ll.semis = [
+        { local: 'Ganador CF #1', visitante: 'Ganador CF #2', fecha: '2026-07-14' },
+        { local: 'Ganador CF #3', visitante: 'Ganador CF #4', fecha: '2026-07-15' }
+      ];
+      // tercerPuesto and final already have placeholder objects — not modified
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -651,15 +711,8 @@
             e.gf = 0; e.gc = 0; e.pts = 0;
           });
         }
-        // Resetear llave
-        data.llave.treintaidosavos = [];
-        data.llave.dieciseisavos = [];
-        data.llave.cuartos = [];
-        data.llave.semis = [];
-        data.llave.tercerPuesto = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-18' };
-        data.llave.final = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-19', sede: 'MetLife Stadium, Nueva York' };
-
         this._torneo = data;
+        this._inicializarLlave();
         return true;
       } catch (e) {
         console.warn('[FIFA Widget] Cache inválido, usando datos por defecto:', e.message);
@@ -683,13 +736,6 @@
             e.gf = 0; e.gc = 0; e.pts = 0;
           });
         }
-        snapshot.llave.treintaidosavos = [];
-        snapshot.llave.dieciseisavos = [];
-        snapshot.llave.cuartos = [];
-        snapshot.llave.semis = [];
-        snapshot.llave.tercerPuesto = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-18' };
-        snapshot.llave.final = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-19', sede: 'MetLife Stadium, Nueva York' };
-
         localStorage.setItem(this._cacheKey(), JSON.stringify(snapshot));
       } catch (e) {
         console.warn('[FIFA Widget] No se pudo guardar cache:', e.message);
@@ -992,6 +1038,48 @@
           if (timeline) {
             partido.eventos = this._parsearTimeline(timeline, partido);
           }
+        }
+      }
+
+      // Knockout pass: route API events by strRound
+      for (const evt of eventosAPI) {
+        const strRound = evt.strRound || '';
+        const llaveKey = MAPEO_RONDAS[strRound];
+        if (!llaveKey) continue;
+
+        // Map status (same mapping as group stage)
+        const strStatus = evt.strStatus || '';
+        let mappedStatus = 'programado';
+        if (strStatus === 'FT' || strStatus === 'AET' || strStatus === 'Pen') {
+          mappedStatus = 'finalizado';
+        } else if (strStatus === 'NS') {
+          mappedStatus = 'programado';
+        } else if (['HT', 'LIVE', '1H', '2H', 'ET', 'P'].includes(strStatus)) {
+          mappedStatus = 'en-vivo';
+        }
+
+        const golLocal = parseInt(evt.intHomeScore);
+        const golVisitante = parseInt(evt.intAwayScore);
+
+        const matchData = {
+          idEvent: evt.idEvent,
+          local: MAPA_EQUIPOS[evt.strHomeTeam] || evt.strHomeTeam,
+          visitante: MAPA_EQUIPOS[evt.strAwayTeam] || evt.strAwayTeam,
+          golLocal: isNaN(golLocal) ? null : golLocal,
+          golVisitante: isNaN(golVisitante) ? null : golVisitante,
+          fecha: evt.dateEvent,
+          sede: evt.strVenue || null,
+          estado: mappedStatus
+        };
+
+        if (Array.isArray(this._torneo.llave[llaveKey])) {
+          // Update existing match by idEvent or push new
+          const idx = this._torneo.llave[llaveKey].findIndex(m => m.idEvent === evt.idEvent);
+          if (idx >= 0) Object.assign(this._torneo.llave[llaveKey][idx], matchData);
+          else this._torneo.llave[llaveKey].push(matchData);
+        } else {
+          // Single object (tercerPuesto, final)
+          Object.assign(this._torneo.llave[llaveKey], matchData);
         }
       }
 

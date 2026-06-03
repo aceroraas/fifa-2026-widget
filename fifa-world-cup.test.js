@@ -71,7 +71,8 @@ const vm = require('vm');
 // Modify source to expose constants to globalThis
 const exposedSource = source
   .replace('const TORNEO =', 'globalThis.TORNEO =')
-  .replace('const MAPA_EQUIPOS =', 'globalThis.MAPA_EQUIPOS =');
+  .replace('const MAPA_EQUIPOS =', 'globalThis.MAPA_EQUIPOS =')
+  .replace('const MAPEO_RONDAS =', 'globalThis.MAPEO_RONDAS =');
 
 const sandbox = {
   globalThis: {},
@@ -98,6 +99,7 @@ try {
 
 const TORNEO = sandbox.globalThis.TORNEO;
 const MAPA_EQUIPOS = sandbox.globalThis.MAPA_EQUIPOS;
+const MAPEO_RONDAS = sandbox.globalThis.MAPEO_RONDAS;
 
 if (!TORNEO) {
   console.error('ERROR: Could not extract TORNEO from source');
@@ -105,6 +107,10 @@ if (!TORNEO) {
 }
 if (!MAPA_EQUIPOS) {
   console.error('ERROR: Could not extract MAPA_EQUIPOS from source');
+  process.exit(1);
+}
+if (!MAPEO_RONDAS) {
+  console.error('ERROR: Could not extract MAPEO_RONDAS from source');
   process.exit(1);
 }
 
@@ -176,12 +182,7 @@ function sanitizarParaCache(torneo) {
       e.gf = 0; e.gc = 0; e.pts = 0;
     });
   }
-  snapshot.llave.treintaidosavos = [];
-  snapshot.llave.dieciseisavos = [];
-  snapshot.llave.cuartos = [];
-  snapshot.llave.semis = [];
-  snapshot.llave.tercerPuesto = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-18' };
-  snapshot.llave.final = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-19', sede: 'MetLife Stadium, Nueva York' };
+  // Knockout bracket data is static schedule info — preserved as-is
   return snapshot;
 }
 
@@ -546,14 +547,16 @@ describe('Cache sanitization — strips live data', () => {
     assertEqual(snapshot.grupos.A[0].pg, 0);
     assertEqual(snapshot.grupos.A[0].gf, 0);
   });
-  it('resets knockout bracket', () => {
+  it('preserves knockout bracket data in cache', () => {
     const t = JSON.parse(JSON.stringify(TORNEO));
     t.llave.treintaidosavos = [{ local: 'A', visitante: 'B', golLocal: 2, golVisitante: 1 }];
     t.llave.cuartos = [{ local: 'C', visitante: 'D', golLocal: 1, golVisitante: 0 }];
 
     const snapshot = sanitizarParaCache(t);
-    assertDeepEqual(snapshot.llave.treintaidosavos, []);
-    assertDeepEqual(snapshot.llave.cuartos, []);
+    assertEqual(snapshot.llave.treintaidosavos.length, 1);
+    assertEqual(snapshot.llave.treintaidosavos[0].local, 'A');
+    assertEqual(snapshot.llave.cuartos.length, 1);
+    assertEqual(snapshot.llave.cuartos[0].local, 'C');
   });
   it('preserves static data (teams, schedule, venues)', () => {
     const t = JSON.parse(JSON.stringify(TORNEO));
@@ -739,6 +742,560 @@ describe('_parsearTimeline — parses API timeline to events', () => {
     const partidoKorea = { local: 'Corea del Sur', visitante: 'Rep. Checa' };
     const events = parsearTimeline(timeline, partidoKorea);
     assertEqual(events[0].equipo, 'Corea del Sur');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// KNOCKOUT BRACKET HELPERS (mirror component logic)
+// ═══════════════════════════════════════════════════════════
+
+function inicializarLlave(torneo) {
+  const ll = torneo.llave;
+  // Guard: skip if already populated
+  if (ll.treintaidosavos.length > 0) return;
+
+  ll.treintaidosavos = [
+    { local: '1A', visitante: '3C/D/E/F', fecha: '2026-06-28' },
+    { local: '2B', visitante: '2E', fecha: '2026-06-28' },
+    { local: '1C', visitante: '3A/B/F/H', fecha: '2026-06-28' },
+    { local: '1D', visitante: '3B/E/F/I', fecha: '2026-06-29' },
+    { local: '1E', visitante: '3A/B/C/D', fecha: '2026-06-29' },
+    { local: '1F', visitante: '3A/B/C', fecha: '2026-06-29' },
+    { local: '1G', visitante: '3C/D/E/F', fecha: '2026-06-29' },
+    { local: '2H', visitante: '2G', fecha: '2026-06-30' },
+    { local: '1I', visitante: '3A/B/C/D', fecha: '2026-06-30' },
+    { local: '2L', visitante: '2K', fecha: '2026-06-30' },
+    { local: '1J', visitante: '3I/J/K/L', fecha: '2026-06-30' },
+    { local: '1K', visitante: '3G/H/I/J', fecha: '2026-07-01' },
+    { local: '2F', visitante: '2J', fecha: '2026-07-01' },
+    { local: '2A', visitante: '2D', fecha: '2026-07-01' },
+    { local: '1B', visitante: '3A/D/E/F', fecha: '2026-07-01' },
+    { local: '2C', visitante: '2I', fecha: '2026-07-02' }
+  ];
+  ll.dieciseisavos = [
+    { local: 'Ganador R32 #1', visitante: 'Ganador R32 #2', fecha: '2026-07-03' },
+    { local: 'Ganador R32 #3', visitante: 'Ganador R32 #4', fecha: '2026-07-03' },
+    { local: 'Ganador R32 #5', visitante: 'Ganador R32 #6', fecha: '2026-07-04' },
+    { local: 'Ganador R32 #7', visitante: 'Ganador R32 #8', fecha: '2026-07-04' },
+    { local: 'Ganador R32 #9', visitante: 'Ganador R32 #10', fecha: '2026-07-04' },
+    { local: 'Ganador R32 #11', visitante: 'Ganador R32 #12', fecha: '2026-07-05' },
+    { local: 'Ganador R32 #13', visitante: 'Ganador R32 #14', fecha: '2026-07-05' },
+    { local: 'Ganador R32 #15', visitante: 'Ganador R32 #16', fecha: '2026-07-05' }
+  ];
+  ll.cuartos = [
+    { local: 'Ganador R16 #1', visitante: 'Ganador R16 #2', fecha: '2026-07-09' },
+    { local: 'Ganador R16 #3', visitante: 'Ganador R16 #4', fecha: '2026-07-09' },
+    { local: 'Ganador R16 #5', visitante: 'Ganador R16 #6', fecha: '2026-07-10' },
+    { local: 'Ganador R16 #7', visitante: 'Ganador R16 #8', fecha: '2026-07-10' }
+  ];
+  ll.semis = [
+    { local: 'Ganador CF #1', visitante: 'Ganador CF #2', fecha: '2026-07-14' },
+    { local: 'Ganador CF #3', visitante: 'Ganador CF #4', fecha: '2026-07-15' }
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAPEO_RONDAS TESTS
+// ═══════════════════════════════════════════════════════════
+
+describe('MAPEO_RONDAS — strRound to llave key mapping', () => {
+  it('has all 6 round mappings', () => {
+    const expectedKeys = ['Round of 32', 'Round of 16', 'Quarter-Final', 'Semi-Final', '3rd Place', 'Final'];
+    assertEqual(expectedKeys.length, 6);
+    for (const key of expectedKeys) {
+      assert(MAPEO_RONDAS.hasOwnProperty(key), `Missing mapping for: ${key}`);
+    }
+  });
+
+  it('maps Round of 32 to treintaidosavos', () => {
+    assertEqual(MAPEO_RONDAS['Round of 32'], 'treintaidosavos');
+  });
+
+  it('maps Round of 16 to dieciseisavos', () => {
+    assertEqual(MAPEO_RONDAS['Round of 16'], 'dieciseisavos');
+  });
+
+  it('maps Quarter-Final to cuartos', () => {
+    assertEqual(MAPEO_RONDAS['Quarter-Final'], 'cuartos');
+  });
+
+  it('maps Semi-Final to semis', () => {
+    assertEqual(MAPEO_RONDAS['Semi-Final'], 'semis');
+  });
+
+  it('maps 3rd Place to tercerPuesto', () => {
+    assertEqual(MAPEO_RONDAS['3rd Place'], 'tercerPuesto');
+  });
+
+  it('maps Final to final', () => {
+    assertEqual(MAPEO_RONDAS['Final'], 'final');
+  });
+
+  it('unknown strRound returns undefined', () => {
+    assertEqual(MAPEO_RONDAS['Group Stage'], undefined);
+    assertEqual(MAPEO_RONDAS[''], undefined);
+    assertEqual(MAPEO_RONDAS['Some Unknown Round'], undefined);
+  });
+
+  it('all mapped llave keys exist in TORNEO', () => {
+    for (const llaveKey of Object.values(MAPEO_RONDAS)) {
+      assert(TORNEO.llave.hasOwnProperty(llaveKey), `llave key ${llaveKey} not found in TORNEO`);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// _inicializarLlave TESTS
+// ═══════════════════════════════════════════════════════════
+
+describe('_inicializarLlave — bracket placeholder initialization', () => {
+  it('fills treintaidosavos with 16 matches', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    assertEqual(t.llave.treintaidosavos.length, 16);
+  });
+
+  it('fills dieciseisavos with 8 matches', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    assertEqual(t.llave.dieciseisavos.length, 8);
+  });
+
+  it('fills cuartos with 4 matches', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    assertEqual(t.llave.cuartos.length, 4);
+  });
+
+  it('fills semis with 2 matches', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    assertEqual(t.llave.semis.length, 2);
+  });
+
+  it('first treintaidosavos slot local is 1A', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    assertEqual(t.llave.treintaidosavos[0].local, '1A');
+    assertEqual(t.llave.treintaidosavos[0].visitante, '3C/D/E/F');
+  });
+
+  it('last treintaidosavos slot is 2C vs 2I', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    const last = t.llave.treintaidosavos[15];
+    assertEqual(last.local, '2C');
+    assertEqual(last.visitante, '2I');
+  });
+
+  it('does not modify tercerPuesto object', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    const original = JSON.stringify(t.llave.tercerPuesto);
+    inicializarLlave(t);
+    assertEqual(JSON.stringify(t.llave.tercerPuesto), original);
+  });
+
+  it('does not modify final object', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    const original = JSON.stringify(t.llave.final);
+    inicializarLlave(t);
+    assertEqual(JSON.stringify(t.llave.final), original);
+  });
+
+  it('is idempotent — calling twice does not duplicate entries', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    inicializarLlave(t);
+    assertEqual(t.llave.treintaidosavos.length, 16);
+    assertEqual(t.llave.dieciseisavos.length, 8);
+  });
+
+  it('does not overwrite existing populated arrays', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    t.llave.treintaidosavos = [{ local: 'Mexico', visitante: 'Brazil', fecha: '2026-06-28' }];
+    inicializarLlave(t);
+    // Guard should skip because treintaidosavos already has data
+    assertEqual(t.llave.treintaidosavos.length, 1);
+    assertEqual(t.llave.treintaidosavos[0].local, 'Mexico');
+  });
+
+  it('all treintaidosavos matches have fecha strings', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    t.llave.treintaidosavos.forEach((m, i) => {
+      assert(/^\d{4}-\d{2}-\d{2}$/.test(m.fecha), `Match ${i} has invalid date: ${m.fecha}`);
+    });
+  });
+
+  it('all dieciseisavos matches reference R32 winners', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    t.llave.dieciseisavos.forEach((m, i) => {
+      assert(m.local.startsWith('Ganador R32'), `Dieciseisavos match ${i} local should reference R32 winner`);
+      assert(m.visitante.startsWith('Ganador R32'), `Dieciseisavos match ${i} visitante should reference R32 winner`);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// strRound ROUTING TESTS
+// ═══════════════════════════════════════════════════════════
+
+describe('strRound routing — knockout event classification', () => {
+  function routearKnockout(strRound) {
+    return MAPEO_RONDAS[strRound] || null;
+  }
+
+  it('routes Round of 32 to treintaidosavos', () => {
+    assertEqual(routearKnockout('Round of 32'), 'treintaidosavos');
+  });
+
+  it('routes Round of 16 to dieciseisavos', () => {
+    assertEqual(routearKnockout('Round of 16'), 'dieciseisavos');
+  });
+
+  it('routes Quarter-Final to cuartos', () => {
+    assertEqual(routearKnockout('Quarter-Final'), 'cuartos');
+  });
+
+  it('routes Semi-Final to semis', () => {
+    assertEqual(routearKnockout('Semi-Final'), 'semis');
+  });
+
+  it('routes 3rd Place to tercerPuesto', () => {
+    assertEqual(routearKnockout('3rd Place'), 'tercerPuesto');
+  });
+
+  it('routes Final to final', () => {
+    assertEqual(routearKnockout('Final'), 'final');
+  });
+
+  it('returns null for unknown round names', () => {
+    assertEqual(routearKnockout('Group Stage'), null);
+    assertEqual(routearKnockout('Qualifying'), null);
+    assertEqual(routearKnockout(''), null);
+    assertEqual(routearKnockout(undefined), null);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// CACHE PRESERVATION TESTS
+// ═══════════════════════════════════════════════════════════
+
+describe('Cache preservation — knockout data survives round-trip', () => {
+  it('save/load round-trip preserves llave arrays', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    t.llave.treintaidosavos[0].golLocal = 2;
+    t.llave.treintaidosavos[0].golVisitante = 1;
+
+    const snapshot = sanitizarParaCache(t);
+    // Knockout bracket is static schedule data — must be preserved
+    assertEqual(snapshot.llave.treintaidosavos.length, 16);
+    assertEqual(snapshot.llave.treintaidosavos[0].local, '1A');
+    assertEqual(snapshot.llave.dieciseisavos.length, 8);
+    assertEqual(snapshot.llave.cuartos.length, 4);
+    assertEqual(snapshot.llave.semis.length, 2);
+  });
+
+  it('old cache with empty arrays gets filled by _inicializarLlave', () => {
+    // Simulate legacy cache: empty llave arrays
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    // _inicializarLlave fills them because arrays are empty
+    inicializarLlave(t);
+    assertEqual(t.llave.treintaidosavos.length, 16);
+    assertEqual(t.llave.dieciseisavos.length, 8);
+  });
+
+  it('cache preserves tercerPuesto and final objects', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    const snapshot = sanitizarParaCache(t);
+    assert(snapshot.llave.tercerPuesto.hasOwnProperty('local'));
+    assert(snapshot.llave.tercerPuesto.hasOwnProperty('visitante'));
+    assert(snapshot.llave.final.hasOwnProperty('fecha'));
+    assert(snapshot.llave.final.hasOwnProperty('sede'));
+  });
+
+  it('group stage update does not erase knockout data', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    // Simulate a group stage result
+    t.partidos[0].estado = 'finalizado';
+    t.partidos[0].golLocal = 2;
+    t.partidos[0].golVisitante = 1;
+
+    const snapshot = sanitizarParaCache(t);
+    // Group stage data is sanitized
+    assertEqual(snapshot.partidos[0].golLocal, null);
+    // Knockout data is preserved
+    assertEqual(snapshot.llave.treintaidosavos.length, 16);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// KNOCKOUT MERGE INTEGRATION TESTS
+// ═══════════════════════════════════════════════════════════
+
+describe('Knockout merge — API events land in correct llave arrays', () => {
+  function mezclarKnockout(torneo, eventosAPI) {
+    for (const evt of eventosAPI) {
+      const llaveKey = MAPEO_RONDAS[evt.strRound];
+      if (!llaveKey) continue;
+
+      const strStatus = evt.strStatus || '';
+      let mappedStatus = 'programado';
+      if (strStatus === 'FT' || strStatus === 'AET' || strStatus === 'Pen') {
+        mappedStatus = 'finalizado';
+      } else if (['HT', 'LIVE', '1H', '2H', 'ET', 'P'].includes(strStatus)) {
+        mappedStatus = 'en-vivo';
+      }
+
+      const golLocal = parseInt(evt.intHomeScore);
+      const golVisitante = parseInt(evt.intAwayScore);
+
+      const matchData = {
+        idEvent: evt.idEvent,
+        local: MAPA_EQUIPOS[evt.strHomeTeam] || evt.strHomeTeam,
+        visitante: MAPA_EQUIPOS[evt.strAwayTeam] || evt.strAwayTeam,
+        golLocal: isNaN(golLocal) ? null : golLocal,
+        golVisitante: isNaN(golVisitante) ? null : golVisitante,
+        fecha: evt.dateEvent,
+        sede: evt.strVenue || null,
+        estado: mappedStatus
+      };
+
+      if (Array.isArray(torneo.llave[llaveKey])) {
+        const idx = torneo.llave[llaveKey].findIndex(m => m.idEvent === evt.idEvent);
+        if (idx >= 0) Object.assign(torneo.llave[llaveKey][idx], matchData);
+        else torneo.llave[llaveKey].push(matchData);
+      } else {
+        Object.assign(torneo.llave[llaveKey], matchData);
+      }
+    }
+  }
+
+  it('routes Finished Round of 32 match to treintaidosavos', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    const eventos = [{
+      idEvent: '1001',
+      strRound: 'Round of 32',
+      strHomeTeam: 'Mexico',
+      strAwayTeam: 'Brazil',
+      intHomeScore: '2',
+      intAwayScore: '1',
+      strStatus: 'FT',
+      dateEvent: '2026-06-28',
+      strVenue: 'Estadio Azteca'
+    }];
+
+    mezclarKnockout(t, eventos);
+    // Should update the first placeholder by idEvent (push new since no matching idEvent yet)
+    // Since we push new, the array will have 17 elements (16 placeholders + 1 API match)
+    const matches = t.llave.treintaidosavos;
+    const apiMatch = matches.find(m => m.idEvent === '1001');
+    assert(apiMatch !== undefined, 'API match should be in treintaidosavos');
+    assertEqual(apiMatch.local, 'México');
+    assertEqual(apiMatch.visitante, 'Brasil');
+    assertEqual(apiMatch.golLocal, 2);
+    assertEqual(apiMatch.golVisitante, 1);
+    assertEqual(apiMatch.estado, 'finalizado');
+  });
+
+  it('merges by idEvent — updates existing match instead of duplicating', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    const eventos = [{
+      idEvent: '1001',
+      strRound: 'Round of 32',
+      strHomeTeam: 'Mexico',
+      strAwayTeam: 'Brazil',
+      intHomeScore: '2',
+      intAwayScore: '1',
+      strStatus: 'FT',
+      dateEvent: '2026-06-28',
+      strVenue: null
+    }];
+
+    mezclarKnockout(t, eventos);
+    // Second fetch with updated score
+    const eventos2 = [{
+      idEvent: '1001',
+      strRound: 'Round of 32',
+      strHomeTeam: 'Mexico',
+      strAwayTeam: 'Brazil',
+      intHomeScore: '3',
+      intAwayScore: '2',
+      strStatus: 'FT',
+      dateEvent: '2026-06-28',
+      strVenue: 'Estadio Azteca'
+    }];
+    mezclarKnockout(t, eventos2);
+
+    // Should only have 17 entries (16 placeholders + 1 API match, not duplicated)
+    const apiMatches = t.llave.treintaidosavos.filter(m => m.idEvent === '1001');
+    assertEqual(apiMatches.length, 1, 'Should not duplicate matches with same idEvent');
+    assertEqual(apiMatches[0].golLocal, 3);
+    assertEqual(apiMatches[0].golVisitante, 2);
+    assertEqual(apiMatches[0].sede, 'Estadio Azteca');
+  });
+
+  it('routes Quarter-Final match to cuartos', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    const eventos = [{
+      idEvent: '2001',
+      strRound: 'Quarter-Final',
+      strHomeTeam: 'Argentina',
+      strAwayTeam: 'Germany',
+      intHomeScore: '1',
+      intAwayScore: '0',
+      strStatus: 'AET',
+      dateEvent: '2026-07-09',
+      strVenue: null
+    }];
+
+    mezclarKnockout(t, eventos);
+    const qfMatch = t.llave.cuartos.find(m => m.idEvent === '2001');
+    assert(qfMatch !== undefined, 'QF match should be in cuartos');
+    assertEqual(qfMatch.local, 'Argentina');
+    assertEqual(qfMatch.visitante, 'Alemania');
+    assertEqual(qfMatch.estado, 'finalizado');
+  });
+
+  it('routes 3rd Place match to tercerPuesto (object round)', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    const eventos = [{
+      idEvent: '3001',
+      strRound: '3rd Place',
+      strHomeTeam: 'Netherlands',
+      strAwayTeam: 'England',
+      intHomeScore: '2',
+      intAwayScore: '1',
+      strStatus: 'FT',
+      dateEvent: '2026-07-18',
+      strVenue: null
+    }];
+
+    mezclarKnockout(t, eventos);
+    assertEqual(t.llave.tercerPuesto.local, 'Países Bajos');
+    assertEqual(t.llave.tercerPuesto.visitante, 'Inglaterra');
+    assertEqual(t.llave.tercerPuesto.golLocal, 2);
+    assertEqual(t.llave.tercerPuesto.golVisitante, 1);
+    assertEqual(t.llave.tercerPuesto.estado, 'finalizado');
+  });
+
+  it('routes Final match to final (object round)', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    const eventos = [{
+      idEvent: '4001',
+      strRound: 'Final',
+      strHomeTeam: 'Argentina',
+      strAwayTeam: 'France',
+      intHomeScore: '3',
+      intAwayScore: '2',
+      strStatus: 'Pen',
+      dateEvent: '2026-07-19',
+      strVenue: 'MetLife Stadium, Nueva York'
+    }];
+
+    mezclarKnockout(t, eventos);
+    assertEqual(t.llave.final.local, 'Argentina');
+    assertEqual(t.llave.final.visitante, 'Francia');
+    assertEqual(t.llave.final.golLocal, 3);
+    assertEqual(t.llave.final.golVisitante, 2);
+    assertEqual(t.llave.final.estado, 'finalizado');
+  });
+
+  it('maps team names from English to Spanish via MAPA_EQUIPOS', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    const eventos = [{
+      idEvent: '5001',
+      strRound: 'Round of 16',
+      strHomeTeam: 'Spain',
+      strAwayTeam: 'Germany',
+      intHomeScore: '1',
+      intAwayScore: '1',
+      strStatus: 'LIVE',
+      dateEvent: '2026-07-03',
+      strVenue: null
+    }];
+
+    mezclarKnockout(t, eventos);
+    const match = t.llave.dieciseisavos.find(m => m.idEvent === '5001');
+    assert(match !== undefined);
+    assertEqual(match.local, 'España');
+    assertEqual(match.visitante, 'Alemania');
+    assertEqual(match.estado, 'en-vivo');
+  });
+
+  it('skips events with unknown strRound', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    const eventos = [{
+      idEvent: '9999',
+      strRound: 'Group Stage',
+      strHomeTeam: 'Mexico',
+      strAwayTeam: 'Canada',
+      strStatus: 'FT',
+      dateEvent: '2026-06-20'
+    }];
+
+    mezclarKnockout(t, eventos);
+    // Should not be in any knockout array
+    const allKnockout = [
+      ...t.llave.treintaidosavos,
+      ...t.llave.dieciseisavos,
+      ...t.llave.cuartos,
+      ...t.llave.semis
+    ];
+    const unknown = allKnockout.find(m => m.idEvent === '9999');
+    assertEqual(unknown, undefined);
+  });
+
+  it('handles events with live status correctly', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    const eventos = [{
+      idEvent: '6001',
+      strRound: 'Semi-Final',
+      strHomeTeam: 'Brazil',
+      strAwayTeam: 'France',
+      intHomeScore: '1',
+      intAwayScore: '0',
+      strStatus: '2H',
+      dateEvent: '2026-07-14',
+      strVenue: null
+    }];
+
+    mezclarKnockout(t, eventos);
+    const match = t.llave.semis.find(m => m.idEvent === '6001');
+    assert(match !== undefined);
+    assertEqual(match.estado, 'en-vivo');
+    assertEqual(match.golLocal, 1);
+    assertEqual(match.golVisitante, 0);
+  });
+
+  it('null scores are preserved as null', () => {
+    const t = JSON.parse(JSON.stringify(TORNEO));
+    inicializarLlave(t);
+    const eventos = [{
+      idEvent: '7001',
+      strRound: 'Round of 32',
+      strHomeTeam: 'Canada',
+      strAwayTeam: 'Qatar',
+      strStatus: 'NS',
+      dateEvent: '2026-06-28',
+      strVenue: null
+    }];
+
+    mezclarKnockout(t, eventos);
+    const match = t.llave.treintaidosavos.find(m => m.idEvent === '7001');
+    assert(match !== undefined);
+    assertEqual(match.golLocal, null);
+    assertEqual(match.golVisitante, null);
+    assertEqual(match.estado, 'programado');
   });
 });
 
