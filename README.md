@@ -204,7 +204,7 @@ Run unit tests with no dependencies:
 node fifa-world-cup.test.js
 ```
 
-Tests cover:
+Tests cover (120 total):
 - Team name mapping (MAPA_EQUIPOS) — 13 tests
 - Tournament data structure (TORNEO) — 11 tests
 - Position recalculation logic — 7 tests
@@ -213,6 +213,16 @@ Tests cover:
 - Position sorting (points + goal difference) — 2 tests
 - Cache sanitization (strips live data) — 6 tests
 - Match schedule validation — 5 tests
+- Timeline parsing (_parsearTimeline) — 10 tests
+- MAPEO_RONDAS completeness — 1 test
+- Bracket initialization — 5 tests
+- strRound routing — 5 tests
+- Cache preservation — 3 tests
+- Knockout merge integration — 6 tests
+- Goal detection — 5 tests
+- Collapse state logic — 4 tests
+- Header badge branding — 1 test
+- Acerca de tab — 5 tests
 
 ## Interactive Demo
 
@@ -226,6 +236,7 @@ Open `fifa-demo.html` in a browser to see the widget in different states:
 - **Tournament done** — all 24 matches finished
 - **Light theme** — alternate color scheme
 - **Top-left position** — different corner placement
+- **Acerca de** — about panel with Strix branding and API provider links
 
 ## Browser Support
 
