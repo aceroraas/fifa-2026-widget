@@ -1,0 +1,10 @@
+# AI tool cache — not needed by other users
+.atl/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
