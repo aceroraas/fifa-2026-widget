@@ -318,17 +318,12 @@
       max-width: 40px;
       justify-content: center;
       align-items: center;
+      gap: 0;
     }
     .live-pill.colapsado .live-equipos,
     .live-pill.colapsado .live-marcador,
     .live-pill.colapsado .live-minuto {
-      width: 0;
-      max-width: 0;
-      opacity: 0;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      flex-shrink: 1;
+      display: none;
     }
 
     /* Goal celebration animation */
@@ -1637,6 +1632,8 @@
     }
 
     _programarColapsar() {
+      // No colapsar si la tarjeta está abierta
+      if (this._refs.widget.classList.contains('tarjeta-abierta')) return;
       clearTimeout(this._timeoutColapsar);
       this._timeoutColapsar = setTimeout(() => this._colapsar(), 3000);
     }
