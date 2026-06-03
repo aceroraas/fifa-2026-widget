@@ -1138,7 +1138,9 @@
     // ═══════════════════════════════════════════════════════════
     // LOCALSTORAGE CACHE — estático, sin datos en vivo
     // ═══════════════════════════════════════════════════════════
-    _cacheKey() { return 'fifa-widget-v1'; }
+    _cacheKey() {
+      return 'fifa-widget-v1:' + (this.getAttribute('api-url') || 'default');
+    }
 
     _loadCache() {
       try {
@@ -2085,51 +2087,56 @@
     // SNOOZE — "No mostrar más" options
     // ═══════════════════════════════════════════════════════════
 
-    _cacheKey() {
-      return 'fifa-widget:' + (this.getAttribute('api-url') || 'default');
-    }
-
     _verificarSnooze() {
-      const key = this._cacheKey();
+      try {
+        const key = this._cacheKey();
 
-      // Check permanent snooze
-      const permanente = localStorage.getItem(`${key}:snooze-permanente`);
-      if (permanente === 'true') {
-        return { permitido: false, razon: 'permanente' };
-      }
-
-      // Check until-next-match snooze
-      const hasta = localStorage.getItem(`${key}:snooze-hasta`);
-      if (hasta) {
-        const ahora = new Date();
-        const fechaLimite = new Date(hasta);
-        if (ahora < fechaLimite) {
-          return { permitido: false, razon: 'temporal', hasta: fechaLimite };
+        // Check permanent snooze
+        const permanente = localStorage.getItem(`${key}:snooze-permanente`);
+        if (permanente === 'true') {
+          return { permitido: false, razon: 'permanente' };
         }
-        // Expired — clear it
-        localStorage.removeItem(`${key}:snooze-hasta`);
-      }
 
-      return { permitido: true };
+        // Check until-next-match snooze
+        const hasta = localStorage.getItem(`${key}:snooze-hasta`);
+        if (hasta) {
+          const ahora = new Date();
+          const fechaLimite = new Date(hasta);
+          if (ahora < fechaLimite) {
+            return { permitido: false, razon: 'temporal', hasta: fechaLimite };
+          }
+          // Expired — clear it
+          localStorage.removeItem(`${key}:snooze-hasta`);
+        }
+
+        return { permitido: true };
+      } catch (e) {
+        // localStorage unavailable (private mode, blocked) — allow by default
+        return { permitido: true };
+      }
     }
 
     _guardarSnooze(accion) {
-      const key = this._cacheKey();
+      try {
+        const key = this._cacheKey();
 
-      if (accion === 'nunca') {
-        localStorage.setItem(`${key}:snooze-permanente`, 'true');
-      } else if (accion === 'hasta-proximo') {
-        const proximo = this._proximoPartido();
-        if (proximo) {
-          const fecha = new Date(proximo.fecha + 'T' + proximo.hora + ':00Z');
-          localStorage.setItem(`${key}:snooze-hasta`, fecha.toISOString());
-        } else {
-          // No hay próximo partido — guardar 24 horas
-          const manana = new Date(Date.now() + 24 * 60 * 60 * 1000);
-          localStorage.setItem(`${key}:snooze-hasta`, manana.toISOString());
+        if (accion === 'nunca') {
+          localStorage.setItem(`${key}:snooze-permanente`, 'true');
+        } else if (accion === 'hasta-proximo') {
+          const proximo = this._proximoPartido();
+          if (proximo) {
+            const fecha = new Date(proximo.fecha + 'T' + proximo.hora + ':00Z');
+            localStorage.setItem(`${key}:snooze-hasta`, fecha.toISOString());
+          } else {
+            // No hay próximo partido — guardar 24 horas
+            const manana = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            localStorage.setItem(`${key}:snooze-hasta`, manana.toISOString());
+          }
         }
+        // 'ocultar' no guarda nada — solo desaparece hasta recargar
+      } catch (e) {
+        console.warn('[FIFA Widget] No se pudo guardar snooze:', e.message);
       }
-      // 'ocultar' no guarda nada — solo desaparece hasta recargar
     }
 
     _toggleSnoozePanel() {
@@ -2627,5 +2634,8 @@
     }
   }
 
-  customElements.define('fifa-world-cup', FifaWorldCup);
+  // Guard: prevent double registration
+  if (!customElements.get('fifa-world-cup')) {
+    customElements.define('fifa-world-cup', FifaWorldCup);
+  }
 })();
