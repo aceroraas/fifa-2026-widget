@@ -372,6 +372,10 @@
     }
     .live-pill.colapsado .live-dot { display: none; }
 
+    /* Dirección inteligente al expandir */
+    .live-pill.expand-left .pelota { order: 5; }
+    .idle-pill.expand-left .pelota { order: 2; }
+
     /* ── Pill idle (cuenta regresiva) ── */
     .idle-pill {
       background: var(--fwc-bg-light);
@@ -398,16 +402,17 @@
 
     /* Collapsed state — only ball visible */
     .idle-pill.colapsado {
-      padding: 0.55rem;
+      width: 40px;
+      height: 40px;
+      padding: 0;
       border-radius: 50%;
-      max-width: 48px;
+      max-width: 40px;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
     }
     .idle-pill.colapsado .texto-cuenta {
-      max-width: 0;
-      opacity: 0;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
+      display: none;
     }
 
     .idle-pill .pelota {
@@ -1614,10 +1619,13 @@
     }
 
     _onPillHover() {
+      // No expandir mientras se está arrastrando
+      if (this._dragging) return;
+
       this._hoverActivo = true;
       clearTimeout(this._timeoutColapsar);
 
-      // Expand immediately
+      // Expand immediately with smart direction
       this._expandir();
 
       // Auto-collapse after 1 minute of no hover
@@ -1648,6 +1656,20 @@
       this._colapsado = false;
       this._refs.idlePill.classList.remove('colapsado');
       this._refs.livePill.classList.remove('colapsado');
+
+      // Dirección inteligente según posición en pantalla
+      const rect = this.getBoundingClientRect();
+      const centro = rect.left + rect.width / 2;
+      const mitadPantalla = window.innerWidth / 2;
+
+      [this._refs.idlePill, this._refs.livePill].forEach(pill => {
+        pill.classList.remove('expand-right', 'expand-left');
+        if (centro < mitadPantalla) {
+          pill.classList.add('expand-right');
+        } else {
+          pill.classList.add('expand-left');
+        }
+      });
     }
 
     // Check if goals changed → trigger celebration
@@ -1715,6 +1737,12 @@
       this._dragMoved = false;
       this._dragging = true;
 
+      // Colapsar durante el drag para mejor experiencia
+      this._wasColapsado = this._colapsado;
+      if (!this._colapsado) {
+        this._colapsar();
+      }
+
       // Fijar posición actual como top/left inline
       this.style.position = 'fixed';
       this.style.top = rect.top + 'px';
@@ -1751,6 +1779,14 @@
       document.removeEventListener('mouseup', this._onDragEndBound);
       document.removeEventListener('touchmove', this._onDragMoveBound);
       document.removeEventListener('touchend', this._onDragEndBound);
+
+      // Restaurar estado después del drag
+      if (!this._wasColapsado && !this._dragMoved) {
+        // Era un click, no un drag — re-expandir
+        this._expandir();
+      }
+      // Si fue un drag real, queda colapsado (el hover lo re-expandirá)
+      delete this._wasColapsado;
     }
 
     // ═══════════════════════════════════════════════════════════
