@@ -1490,8 +1490,8 @@ describe('Snooze — localStorage keys and logic', () => {
     assert(diffHoras >= 23 && diffHoras <= 25, `Expected ~24h, got ${diffHoras}h`);
   });
 
-  it('no guarda nada con acción "cerrar"', () => {
-    guardarSnooze('fifa-widget:default', 'cerrar', mockLocalStorage, null);
+  it('no guarda nada con acción "ocultar"', () => {
+    guardarSnooze('fifa-widget:default', 'ocultar', mockLocalStorage, null);
     assert(mockLocalStorage.getItem('fifa-widget:default:snooze-permanente') === null);
     assert(mockLocalStorage.getItem('fifa-widget:default:snooze-hasta') === null);
   });

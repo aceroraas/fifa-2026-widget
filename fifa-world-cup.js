@@ -1225,11 +1225,11 @@
             <div class="snooze-panel" id="snoozePanel">
               <div class="snooze-titulo">¿Querés que no se muestre más?</div>
               <div class="snooze-opciones">
-                <button class="snooze-btn" data-action="cerrar" title="Cierra la tarjeta. El widget sigue visible.">
-                  <span class="snooze-icono">✕</span>
+                <button class="snooze-btn" data-action="ocultar" title="Oculta el widget de la pantalla. Vuelve a aparecer al recargar la página (F5).">
+                  <span class="snooze-icono">👁️</span>
                   <span class="snooze-texto">
-                    <strong>Cerrar</strong>
-                    <span class="snooze-desc">El widget sigue visible</span>
+                    <strong>Ocultar hasta recargar</strong>
+                    <span class="snooze-desc">Desaparece hasta que recargues la página (F5)</span>
                   </span>
                 </button>
                 <button class="snooze-btn" data-action="hasta-proximo" title="Oculta el widget de la pantalla hasta que llegue la fecha del próximo partido.">
@@ -2129,7 +2129,7 @@
           localStorage.setItem(`${key}:snooze-hasta`, manana.toISOString());
         }
       }
-      // 'cerrar' no guarda nada
+      // 'ocultar' no guarda nada — solo desaparece hasta recargar
     }
 
     _toggleSnoozePanel() {
@@ -2145,7 +2145,7 @@
       const texto = this._refs.snoozeConfirmTexto;
 
       const mensajes = {
-        'cerrar': '¿Cerrar la tarjeta? El widget sigue visible. Volverá a aparecer al recargar.',
+        'ocultar': '¿Ocultar el widget? Desaparecerá de la pantalla. Volverá a aparecer al recargar la página (F5).',
         'hasta-proximo': '¿Ocultar el widget hasta el próximo partido? Desaparecerá de la pantalla hasta que llegue la fecha del próximo partido.',
         'nunca': '¿Ocultar el widget permanentemente? Desaparecerá de la pantalla. Solo podés revertirlo borrando los datos del navegador (localStorage).'
       };
@@ -2161,13 +2161,13 @@
 
     _confirmarSnooze() {
       if (this._snoozePendiente) {
-        this._guardarSnooze(this._snoozePendiente);
-
-        // Ocultar el widget si es snooze temporal o permanente
-        if (this._snoozePendiente === 'hasta-proximo' || this._snoozePendiente === 'nunca') {
-          this.setAttribute('snoozed', '');
+        // 'ocultar' no guarda nada, solo oculta hasta recargar
+        if (this._snoozePendiente !== 'ocultar') {
+          this._guardarSnooze(this._snoozePendiente);
         }
 
+        // Ocultar el widget para todas las opciones excepto 'cerrar' (que ya no existe)
+        this.setAttribute('snoozed', '');
         this._snoozePendiente = null;
       }
       this._refs.snoozeConfirm.style.display = 'none';
