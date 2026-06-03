@@ -554,8 +554,83 @@
       this._dragMoved = false;
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // LOCALSTORAGE CACHE — estático, sin datos en vivo
+    // ═══════════════════════════════════════════════════════════
+    _cacheKey() { return 'fifa-widget-v1'; }
+
+    _loadCache() {
+      try {
+        const raw = localStorage.getItem(this._cacheKey());
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        // Restaurar campos dinámicos a estado base
+        data.partidos.forEach(p => {
+          p.golLocal = null;
+          p.golVisitante = null;
+          p.estado = 'programado';
+          delete p.minuto;
+        });
+        // Resetear posiciones
+        for (const grupo of Object.values(data.grupos)) {
+          grupo.forEach(e => {
+            e.pj = 0; e.pg = 0; e.pe = 0; e.pp = 0;
+            e.gf = 0; e.gc = 0; e.pts = 0;
+          });
+        }
+        // Resetear llave
+        data.llave.treintaidosavos = [];
+        data.llave.dieciseisavos = [];
+        data.llave.cuartos = [];
+        data.llave.semis = [];
+        data.llave.tercerPuesto = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-18' };
+        data.llave.final = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-19', sede: 'MetLife Stadium, Nueva York' };
+
+        this._torneo = data;
+        return true;
+      } catch (e) {
+        console.warn('[FIFA Widget] Cache inválido, usando datos por defecto:', e.message);
+        return false;
+      }
+    }
+
+    _saveCache() {
+      try {
+        // Clonar y sanitizar: solo datos estáticos
+        const snapshot = JSON.parse(JSON.stringify(this._torneo));
+        snapshot.partidos.forEach(p => {
+          p.golLocal = null;
+          p.golVisitante = null;
+          p.estado = 'programado';
+          delete p.minuto;
+        });
+        for (const grupo of Object.values(snapshot.grupos)) {
+          grupo.forEach(e => {
+            e.pj = 0; e.pg = 0; e.pe = 0; e.pp = 0;
+            e.gf = 0; e.gc = 0; e.pts = 0;
+          });
+        }
+        snapshot.llave.treintaidosavos = [];
+        snapshot.llave.dieciseisavos = [];
+        snapshot.llave.cuartos = [];
+        snapshot.llave.semis = [];
+        snapshot.llave.tercerPuesto = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-18' };
+        snapshot.llave.final = { local: 'Por definir', visitante: 'Por definir', golLocal: null, golVisitante: null, fecha: '2026-07-19', sede: 'MetLife Stadium, Nueva York' };
+
+        localStorage.setItem(this._cacheKey(), JSON.stringify(snapshot));
+      } catch (e) {
+        console.warn('[FIFA Widget] No se pudo guardar cache:', e.message);
+      }
+    }
+
     connectedCallback() {
       this._apiUrl = this.getAttribute('api-url') || null;
+
+      // Intentar cargar desde cache primero
+      const desdeCache = this._loadCache();
+      if (desdeCache) {
+        console.log('[FIFA Widget] Datos cargados desde cache local');
+      }
       this._shadow = this.attachShadow({ mode: 'open' });
       this._shadow.innerHTML = `
         <style>${ESTILOS}</style>
@@ -839,6 +914,9 @@
 
       // Actualizar pill de en vivo
       this._verificarEnVivo();
+
+      // Guardar estáticos en cache
+      this._saveCache();
     }
 
     _mezclarDatos(datos) {
@@ -858,6 +936,9 @@
         this._renderPosiciones();
         this._renderCalendario();
       }
+
+      // Guardar estáticos en cache
+      this._saveCache();
     }
 
     _recalcularPosiciones() {
@@ -1245,6 +1326,7 @@
         this._verificarEnVivo();
         this._renderPosiciones();
         this._renderCalendario();
+        this._saveCache();
       }
     }
 

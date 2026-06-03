@@ -124,6 +124,17 @@ The widget merges incoming data with its static tournament model. Only fields yo
 
 ## How It Works
 
+### LocalStorage Caching
+
+The widget caches **static tournament data** (groups, teams, schedule, venues, bracket structure) in `localStorage` under the key `fifa-widget-v1`.
+
+- **First load**: uses built-in static data, then caches it
+- **Subsequent loads**: restores from cache instantly — no redundant API calls for structure
+- **Live data is NOT cached**: scores, match status, and minute are always fresh from the API
+- **After API response**: static data is re-saved to cache (sanitized, stripping live scores)
+
+This means the widget loads fast on repeat visits and only queries the API for what's actually changing.
+
 ### Data Model
 
 The widget ships with a **static tournament model** (`TORNEO`) that includes:
@@ -137,6 +148,8 @@ All data is static by default and updates when:
 1. The API returns live results (TheSportsDB or custom endpoint)
 2. You call `actualizarPartido()` manually
 3. The smart scheduler detects a match day and polls automatically
+
+Static data (groups, schedule, teams) is cached in `localStorage` so repeat visits load instantly.
 
 ### Smart Polling
 
