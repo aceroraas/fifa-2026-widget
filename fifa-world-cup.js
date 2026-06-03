@@ -441,6 +441,61 @@
     .meta-fila .etiqueta { color: var(--fwc-text-dim); }
     .meta-fila .valor { color: var(--fwc-text); font-weight: 500; }
 
+    /* ── Badge EN VIVO ── */
+    .badge-en-vivo {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.5rem; padding: 0.5rem 1rem; margin-bottom: 0.8rem;
+      background: linear-gradient(135deg, rgba(76,175,80,0.15), rgba(76,175,80,0.05));
+      border: 1px solid rgba(76,175,80,0.3); border-radius: 50px;
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+    .badge-en-vivo .live-dot {
+      width: 8px; height: 8px; background: var(--fwc-green);
+      border-radius: 50%; animation: blink 1s ease-in-out infinite;
+    }
+    .badge-en-vivo .badge-texto {
+      font-size: 0.7rem; font-weight: 700; color: var(--fwc-green);
+      letter-spacing: 0.1em;
+    }
+    .badge-en-vivo .badge-minuto {
+      font-size: 0.75rem; font-weight: 600; color: #81c784;
+    }
+
+    /* ── Marcador en vivo ── */
+    .marcador-en-vivo {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.8rem; padding: 0.8rem 0; margin-bottom: 0.8rem;
+      background: rgba(76,175,80,0.05); border-radius: 12px;
+      border: 1px solid rgba(76,175,80,0.1);
+    }
+    .marcador-equipo {
+      font-size: 0.85rem; font-weight: 600; color: var(--fwc-text-bright);
+      max-width: 120px; text-align: center;
+    }
+    .marcador-goles {
+      font-size: 1.5rem; font-weight: 700; color: var(--fwc-green);
+      background: rgba(76,175,80,0.1); padding: 0.2rem 0.8rem;
+      border-radius: 8px; letter-spacing: 0.1em;
+    }
+
+    /* ── Eventos del partido (goles, tarjetas) ── */
+    .eventos-partido { padding: 0.5rem 0; margin-bottom: 0.8rem; }
+    .evento-fila {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.35rem 0.5rem; font-size: 0.72rem;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .evento-fila .evento-minuto {
+      color: var(--fwc-text-dim); font-weight: 500; min-width: 35px;
+    }
+    .evento-fila .evento-icono { font-size: 0.9rem; }
+    .evento-fila .evento-texto { color: var(--fwc-text); flex: 1; }
+    .evento-fila .evento-equipo {
+      color: var(--fwc-text-dim); font-size: 0.65rem;
+      background: rgba(255,255,255,0.05); padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+    }
+
     /* ── Panel: Posiciones ── */
     .panel-posiciones { padding: 0.8rem; }
 
@@ -676,17 +731,40 @@
             </div>
             <div class="contenido">
               <div class="panel panel-proximo activo" id="panel-proximo">
-                <div class="cuenta-grande">
-                  <div class="dias-grandes" id="diasGrandes">--</div>
-                  <div class="sub" id="subCuenta">días para el inicio</div>
+                <!-- Sección: Cuenta regresiva (default) -->
+                <div id="seccionCuenta">
+                  <div class="cuenta-grande">
+                    <div class="dias-grandes" id="diasGrandes">--</div>
+                    <div class="sub" id="subCuenta">días para el inicio</div>
+                  </div>
+                </div>
+                <!-- Sección: EN VIVO (se muestra cuando hay partido en curso) -->
+                <div id="seccionEnVivo" style="display:none;">
+                  <div class="badge-en-vivo">
+                    <span class="live-dot"></span>
+                    <span class="badge-texto">EN VIVO</span>
+                    <span class="badge-minuto" id="vivoMinuto"></span>
+                  </div>
                 </div>
                 <div class="enfrentamiento">
                   <div class="escudo" id="escudoLocal">⚽</div>
-                  <span class="vs">VS</span>
+                  <span class="vs" id="textoVS">VS</span>
                   <div class="escudo" id="escudoVisitante">⚽</div>
+                </div>
+                <!-- Marcador en vivo -->
+                <div id="seccionMarcador" style="display:none;">
+                  <div class="marcador-en-vivo">
+                    <span class="marcador-equipo" id="marcadorLocalNombre"></span>
+                    <span class="marcador-goles" id="marcadorGoles"></span>
+                    <span class="marcador-equipo" id="marcadorVisitanteNombre"></span>
+                  </div>
                 </div>
                 <div style="text-align:center; margin-bottom:1rem;">
                   <span style="font-size:0.85rem; font-weight:600; color:var(--fwc-text-bright);" id="textoEquipos"></span>
+                </div>
+                <!-- Eventos del partido (goles, tarjetas) -->
+                <div id="seccionEventos" style="display:none;">
+                  <div class="eventos-partido" id="contenidoEventos"></div>
                 </div>
                 <div class="meta-partido">
                   <div class="meta-fila"><span class="etiqueta">Fecha</span><span class="valor" id="metaFecha"></span></div>
@@ -729,6 +807,16 @@
         diasGrandes: this._shadow.getElementById('diasGrandes'),
         subCuenta: this._shadow.getElementById('subCuenta'),
         faseBadge: this._shadow.getElementById('faseBadge'),
+        seccionCuenta: this._shadow.getElementById('seccionCuenta'),
+        seccionEnVivo: this._shadow.getElementById('seccionEnVivo'),
+        vivoMinuto: this._shadow.getElementById('vivoMinuto'),
+        textoVS: this._shadow.getElementById('textoVS'),
+        seccionMarcador: this._shadow.getElementById('seccionMarcador'),
+        marcadorLocalNombre: this._shadow.getElementById('marcadorLocalNombre'),
+        marcadorGoles: this._shadow.getElementById('marcadorGoles'),
+        marcadorVisitanteNombre: this._shadow.getElementById('marcadorVisitanteNombre'),
+        seccionEventos: this._shadow.getElementById('seccionEventos'),
+        contenidoEventos: this._shadow.getElementById('contenidoEventos'),
         escudoLocal: this._shadow.getElementById('escudoLocal'),
         escudoVisitante: this._shadow.getElementById('escudoVisitante'),
         textoEquipos: this._shadow.getElementById('textoEquipos'),
@@ -897,6 +985,15 @@
         if (partido.estado === 'en-vivo' && evt.strProgress) {
           partido.minuto = evt.strProgress;
         }
+
+        // Parsear eventos (goles) si hay detalles
+        partido.eventos = [];
+        if (evt.strHomeGoalDetails) {
+          partido.eventos.push(...this._parsearDetallesGoles(evt.strHomeGoalDetails, local));
+        }
+        if (evt.strAwayGoalDetails) {
+          partido.eventos.push(...this._parsearDetallesGoles(evt.strAwayGoalDetails, visitante));
+        }
       });
 
       // Recalcular posiciones basado en resultados
@@ -906,6 +1003,9 @@
       if (this._refs.widget.classList.contains('tarjeta-abierta')) {
         this._renderPosiciones();
         this._renderCalendario();
+        // Si hay partido en vivo, actualizar eventos
+        const enVivo = this._torneo.partidos.find(m => m.estado === 'en-vivo');
+        if (enVivo) this._renderEventos(enVivo);
       }
 
       // Actualizar pill de en vivo
@@ -1123,6 +1223,12 @@
       this._renderPosiciones();
       this._renderCalendario();
       this._renderEliminatorias();
+
+      // Si hay partido en vivo, renderizar eventos
+      const enVivo = this._torneo.partidos.find(m => m.estado === 'en-vivo');
+      if (enVivo) {
+        this._renderEventos(enVivo);
+      }
     }
 
     _cerrarTarjeta() {
@@ -1170,19 +1276,45 @@
         r.textoCuenta.textContent = '¡Torneo terminado!';
         r.diasGrandes.textContent = '🏆';
         r.subCuenta.textContent = 'Torneo Finalizado';
+        // Ocultar secciones en vivo
+        r.seccionCuenta.style.display = 'block';
+        r.seccionEnVivo.style.display = 'none';
+        r.seccionMarcador.style.display = 'none';
+        r.seccionEventos.style.display = 'none';
+        r.textoVS.textContent = 'VS';
         return;
       }
 
       const fechaPartido = new Date(proximo.fecha + 'T' + proximo.hora + 'Z');
       const diff = fechaPartido - new Date();
 
-      if (diff <= 0) {
+      if (proximo.estado === 'en-vivo' || diff <= 0) {
+        // Modo EN VIVO: mostrar badge y marcador
+        r.seccionCuenta.style.display = 'none';
+        r.seccionEnVivo.style.display = 'block';
+        r.vivoMinuto.textContent = proximo.minuto ? proximo.minuto : 'EN VIVO';
+        r.textoVS.textContent = '-';
+
+        // Marcador
+        r.seccionMarcador.style.display = 'block';
+        r.marcadorLocalNombre.textContent = proximo.local;
+        r.marcadorVisitanteNombre.textContent = proximo.visitante;
+        r.marcadorGoles.textContent = `${proximo.golLocal ?? 0} - ${proximo.golVisitante ?? 0}`;
+
+        // Eventos (goles, tarjetas)
+        this._renderEventos(proximo);
+
         r.textoCuenta.textContent = '¡EN VIVO!';
         r.diasGrandes.textContent = 'EN VIVO';
         r.subCuenta.textContent = 'Partido en curso';
-        // Si la cuenta dice EN VIVO pero el pill no está activo, forzar verificación
-        this._verificarEnVivo();
       } else {
+        // Modo cuenta regresiva: ocultar secciones en vivo
+        r.seccionCuenta.style.display = 'block';
+        r.seccionEnVivo.style.display = 'none';
+        r.seccionMarcador.style.display = 'none';
+        r.seccionEventos.style.display = 'none';
+        r.textoVS.textContent = 'VS';
+
         const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
         const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -1229,6 +1361,87 @@
         r.livePill.classList.remove('activo');
         r.idlePill.style.display = 'flex';
       }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // EVENTOS DEL PARTIDO (goles, tarjetas)
+    // ═══════════════════════════════════════════════════════════
+    _renderEventos(partido) {
+      const r = this._refs;
+      const eventos = partido.eventos || [];
+
+      if (eventos.length === 0) {
+        // Sin eventos detallados — mostrar resumen básico si hay goles
+        if (partido.golLocal > 0 || partido.golVisitante > 0) {
+          r.seccionEventos.style.display = 'block';
+          let html = '';
+          if (partido.golLocal > 0) {
+            html += `<div class="evento-fila"><span class="evento-icono">⚽</span><span class="evento-texto">${partido.golLocal} gol(es) ${partido.local}</span><span class="evento-equipo">Local</span></div>`;
+          }
+          if (partido.golVisitante > 0) {
+            html += `<div class="evento-fila"><span class="evento-icono">⚽</span><span class="evento-texto">${partido.golVisitante} gol(es) ${partido.visitante}</span><span class="evento-equipo">Visitante</span></div>`;
+          }
+          r.contenidoEventos.innerHTML = html;
+        } else {
+          r.seccionEventos.style.display = 'none';
+        }
+        return;
+      }
+
+      // Eventos detallados disponibles
+      r.seccionEventos.style.display = 'block';
+
+      // Ordenar por minuto
+      const ordenados = [...eventos].sort((a, b) => {
+        const minA = parseInt(a.minuto) || 0;
+        const minB = parseInt(b.minuto) || 0;
+        return minA - minB;
+      });
+
+      const iconos = { gol: '⚽', amarilla: '🟨', roja: '🟥', sustitucion: '🔄' };
+
+      r.contenidoEventos.innerHTML = ordenados.map(ev => {
+        const icono = iconos[ev.tipo] || '•';
+        const texto = ev.tipo === 'gol'
+          ? `${ev.jugador}${ev.asistencia ? ` (${ev.asistencia})` : ''}`
+          : ev.tipo === 'sustitucion'
+            ? `${ev.salio} → ${ev.entro}`
+            : ev.jugador;
+        const equipo = ev.equipo === partido.local ? 'Local' : 'Visitante';
+
+        return `<div class="evento-fila">
+          <span class="evento-minuto">${ev.minuto}'</span>
+          <span class="evento-icono">${icono}</span>
+          <span class="evento-texto">${texto}</span>
+          <span class="evento-equipo">${equipo}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PARSEAR DETALLES DE GOLES (TheSportsDB)
+    // Formato: "45';Lozano;Assist:Herrera~67';Jiménez"
+    // ═══════════════════════════════════════════════════════════
+    _parsearDetallesGoles(detalle, equipo) {
+      if (!detalle || detalle.trim() === '') return [];
+
+      return detalle.split('~').map(gol => {
+        const partes = gol.split(';');
+        const minuto = (partes[0] || '').replace(/[^0-9]/g, '');
+        const jugador = partes[1] || '';
+        const asistenciaParte = partes[2] || '';
+        const asistencia = asistenciaParte.startsWith('Assist:')
+          ? asistenciaParte.replace('Assist:', '').trim()
+          : null;
+
+        return {
+          minuto: minuto,
+          tipo: 'gol',
+          jugador: jugador,
+          asistencia: asistencia,
+          equipo: equipo
+        };
+      }).filter(ev => ev.minuto && ev.jugador);
     }
 
     // ═══════════════════════════════════════════════════════════

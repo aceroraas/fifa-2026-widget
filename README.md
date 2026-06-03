@@ -168,6 +168,14 @@ When there's no cache, the first API call happens immediately on load.
 
 When a match status is `'en-vivo'`, the idle countdown pill is replaced by a green animated live pill showing the score and minute. Clicking it opens the expanded card.
 
+Inside the card, the "Próximo" tab transforms to show:
+- **Live badge** — pulsing green indicator with current minute
+- **Score display** — large score between team names
+- **Match events** — goals (with scorers and assists), yellow/red cards, substitutions
+- Events are sorted chronologically and show which team they belong to
+
+When detailed event data is available (from TheSportsDB or a custom API), individual goal scorers, assists, and cards are displayed. If only scores are available, a summary is shown instead.
+
 ## Tabs
 
 | Tab | Content |

@@ -144,7 +144,7 @@
 <body>
 
   <h1>🏆 FIFA Widget — Demo de Estados</h1>
-  <p class="subtitle">Muestras de cada momento del componente con datos mock.</p>
+  <p class="subtitle">Muestras de cada momento del componente con datos mock. Hacé click en el widget para ver la tarjeta expandida.</p>
 
   <!-- ═══════════════════════════════════════════
        SINGLE WIDGET — switch states with buttons
@@ -187,6 +187,7 @@
         p.golLocal = null;
         p.golVisitante = null;
         delete p.minuto;
+        delete p.eventos;
       });
       for (const grupo of Object.values(t.grupos)) {
         grupo.forEach(e => {
@@ -216,6 +217,10 @@
           t.partidos[0].golLocal = 0;
           t.partidos[0].golVisitante = 0;
           t.partidos[0].minuto = "23'";
+          t.partidos[0].eventos = [
+            { minuto: 8, tipo: 'amarilla', jugador: 'Siphiwe Tshabalala', equipo: 'Sudáfrica' },
+            { minuto: 15, tipo: 'amarilla', jugador: 'Héctor Herrera', equipo: 'México' }
+          ];
           break;
 
         case 'live-goals':
@@ -224,11 +229,23 @@
           t.partidos[0].golLocal = 2;
           t.partidos[0].golVisitante = 1;
           t.partidos[0].minuto = "67'";
+          t.partidos[0].eventos = [
+            { minuto: 12, tipo: 'gol', jugador: 'Hirving Lozano', asistencia: 'Héctor Herrera', equipo: 'México' },
+            { minuto: 23, tipo: 'amarilla', jugador: 'Siphiwe Tshabalala', equipo: 'Sudáfrica' },
+            { minuto: 34, tipo: 'gol', jugador: 'Percy Tau', asistencia: 'Themba Zwane', equipo: 'Sudáfrica' },
+            { minuto: 45, tipo: 'roja', jugador: 'Edson Álvarez', equipo: 'México' },
+            { minuto: 56, tipo: 'gol', jugador: 'Raúl Jiménez', equipo: 'México' },
+            { minuto: 61, tipo: 'sustitucion', salio: 'Hirving Lozano', entro: 'Uriel Antuna', equipo: 'México' },
+            { minuto: 64, tipo: 'amarilla', jugador: 'Thapelo Morena', equipo: 'Sudáfrica' }
+          ];
           // Second match also live: Corea 0 - 0 Rep Checa, minute 12
           t.partidos[1].estado = 'en-vivo';
           t.partidos[1].golLocal = 0;
           t.partidos[1].golVisitante = 0;
           t.partidos[1].minuto = "12'";
+          t.partidos[1].eventos = [
+            { minuto: 5, tipo: 'amarilla', jugador: 'Kim Min-jae', equipo: 'Corea del Sur' }
+          ];
           break;
 
         case 'finished':
