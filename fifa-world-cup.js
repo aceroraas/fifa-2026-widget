@@ -552,6 +552,7 @@
       this._dragging = false;
       this._dragOffset = { x: 0, y: 0 };
       this._dragMoved = false;
+      this._desdeCache = false;
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -627,8 +628,8 @@
       this._apiUrl = this.getAttribute('api-url') || null;
 
       // Intentar cargar desde cache primero
-      const desdeCache = this._loadCache();
-      if (desdeCache) {
+      this._desdeCache = this._loadCache();
+      if (this._desdeCache) {
         console.log('[FIFA Widget] Datos cargados desde cache local');
       }
       this._shadow = this.attachShadow({ mode: 'open' });
@@ -730,13 +731,15 @@
       this._actualizarCuenta();
       this._verificarEnVivo();
 
-      // Intentar cargar datos de la API al inicio
-      this._cargarAPI();
+      // Si NO hay cache → fetch inmediato; si HAY cache → solo programar verificación
+      if (!this._loadCache()) {
+        this._cargarAPI();
+      }
 
       // Intervalo de cuenta regresiva (siempre activo, es barato)
       this._intervaloCuenta = setInterval(() => this._actualizarCuenta(), 30000);
 
-      // Programar consultas a la API SOLO en días de partido
+      // Programar consultas a la API
       this._programarConsultasAPI();
     }
 
@@ -773,40 +776,15 @@
       if (this._intervaloVivo) clearInterval(this._intervaloVivo);
       if (this._timeoutDia) clearTimeout(this._timeoutDia);
 
-      const hoy = new Date();
-      const hoyStr = hoy.toISOString().split('T')[0];
-
-      // ¿Hay partidos hoy?
-      const partidosHoy = this._torneo.partidos.filter(p => p.fecha === hoyStr);
-
-      if (partidosHoy.length > 0) {
-        // Hoy hay partidos → consultar cada 60s
+      // ¿Hay algún partido EN VIVO ahora? → poll agresivo cada 60s
+      const hayEnVivo = this._torneo.partidos.some(p => p.estado === 'en-vivo');
+      if (hayEnVivo) {
         this._intervaloVivo = setInterval(() => this._cargarAPI(), 60000);
-      } else {
-        // No hay partidos hoy → buscar el próximo día de partido
-        const proximoDia = this._torneo.partidos
-          .filter(p => new Date(p.fecha + 'T' + p.hora + 'Z') > hoy)
-          .sort((a, b) => new Date(a.fecha + 'T' + a.hora) - new Date(b.fecha + 'T' + b.hora))[0];
-
-        if (proximoDia) {
-          const fechaProximo = new Date(proximoDia.fecha + 'T' + proximoDia.hora + 'Z');
-          const msHastaProximo = fechaProximo - hoy;
-          const tresHoras = 3 * 60 * 60 * 1000;
-
-          if (msHastaProximo <= tresHoras) {
-            // El próximo partido empieza en menos de 3 horas → empezar YA
-            this._intervaloVivo = setInterval(() => this._cargarAPI(), 60000);
-          } else {
-            // Programar la consulta para 3 horas antes del próximo partido
-            const msParaActivar = msHastaProximo - tresHoras;
-            this._timeoutDia = setTimeout(() => {
-              this._cargarAPI();
-              // Una vez activado, consultar cada 60s
-              this._intervaloVivo = setInterval(() => this._cargarAPI(), 60000);
-            }, msParaActivar);
-          }
-        }
+        return;
       }
+
+      // No hay partidos en vivo → verificar cada 1 hora por si hubo cambios
+      this._intervaloVivo = setInterval(() => this._cargarAPI(), 60 * 60 * 1000);
     }
 
     // ═══════════════════════════════════════════════════════════

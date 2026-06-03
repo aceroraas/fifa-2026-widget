@@ -128,12 +128,14 @@ The widget merges incoming data with its static tournament model. Only fields yo
 
 The widget caches **static tournament data** (groups, teams, schedule, venues, bracket structure) in `localStorage` under the key `fifa-widget-v1`.
 
-- **First load**: uses built-in static data, then caches it
-- **Subsequent loads**: restores from cache instantly — no redundant API calls for structure
-- **Live data is NOT cached**: scores, match status, and minute are always fresh from the API
-- **After API response**: static data is re-saved to cache (sanitized, stripping live scores)
+| Scenario | Behavior |
+|---|---|
+| **No cache** | Fetches API immediately → saves static data to cache |
+| **Has cache** | Loads from cache instantly → checks API every **1 hour** for updates → merges and re-saves if changes found |
+| **Live match** | Polls every **60 seconds** while a match is in progress |
+| **Live data is NOT cached** | Scores, match status, and minute are always fresh from the API |
 
-This means the widget loads fast on repeat visits and only queries the API for what's actually changing.
+This means the widget loads fast on repeat visits, only queries the API hourly for updates, and ramps up to real-time polling only when a match is actually live.
 
 ### Data Model
 
@@ -153,13 +155,14 @@ Static data (groups, schedule, teams) is cached in `localStorage` so repeat visi
 
 ### Smart Polling
 
-The widget doesn't waste requests:
+The widget adapts its polling frequency to the situation:
 
-| Scenario | Behavior |
+| Scenario | Interval |
 |---|---|
-| No match today | Schedules next API call for 3 hours before the next match |
-| Match today | Polls every 60 seconds |
-| Next match in < 3 hours | Starts polling immediately |
+| Match in progress (`en-vivo`) | Every 60 seconds |
+| No live match (normal) | Every 1 hour |
+
+When there's no cache, the first API call happens immediately on load.
 
 ### Live Detection
 
