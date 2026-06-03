@@ -1336,9 +1336,9 @@ describe('Collapse state — pill auto-hide behavior', () => {
     state.hoverActivo = true;
     assert(state.hoverActivo === true);
   });
-  it('collapse timer is 10 seconds', () => {
-    const COLLAPSE_DELAY = 10000;
-    assertEqual(COLLAPSE_DELAY, 10000);
+  it('collapse timer is 3 seconds', () => {
+    const COLLAPSE_DELAY = 3000;
+    assertEqual(COLLAPSE_DELAY, 3000);
   });
   it('expand timer is 60 seconds (1 minute)', () => {
     const EXPAND_TIMEOUT = 60000;

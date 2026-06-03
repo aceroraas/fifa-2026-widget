@@ -357,6 +357,18 @@
     }
     .live-minuto { font-size: 0.65rem; color: #81c784; font-weight: 500; }
 
+    /* Pelota animada en live-pill */
+    .live-pill .pelota {
+      font-size: 1rem;
+      animation: giroLento 4s linear infinite;
+      flex-shrink: 0;
+    }
+    .live-pill:hover .pelota { animation: girar 0.8s linear infinite; }
+    .live-pill.colapsado .pelota {
+      animation: giroLento 60s linear infinite;
+    }
+    .live-pill.colapsado .live-dot { display: none; }
+
     /* ── Pill idle (cuenta regresiva) ── */
     .idle-pill {
       background: var(--fwc-bg-light);
@@ -1098,6 +1110,7 @@
             <span class="live-equipos" id="liveEquipos"></span>
             <span class="live-marcador" id="liveMarcador"></span>
             <span class="live-minuto" id="liveMinuto"></span>
+            <span class="pelota">⚽</span>
           </div>
           <div class="idle-pill" id="idlePill">
             <span class="pelota">⚽</span>
@@ -1617,7 +1630,7 @@
 
     _programarColapsar() {
       clearTimeout(this._timeoutColapsar);
-      this._timeoutColapsar = setTimeout(() => this._colapsar(), 10000);
+      this._timeoutColapsar = setTimeout(() => this._colapsar(), 3000);
     }
 
     _colapsar() {
@@ -1740,6 +1753,10 @@
     // ═══════════════════════════════════════════════════════════
     _abrirTarjeta() {
       const r = this._refs;
+
+      // Pausar timer de colapso mientras la tarjeta está abierta
+      clearTimeout(this._timeoutColapsar);
+
       r.widget.classList.add('tarjeta-abierta');
 
       // Calcular dirección: ¿hay más espacio arriba o abajo?
@@ -1778,6 +1795,8 @@
       setTimeout(() => {
         this._refs.widget.classList.remove('tarjeta-abierta');
         this._refs.tarjeta.classList.remove('hacia-abajo', 'hacia-arriba');
+        // Reanudar timer de colapso al cerrar la tarjeta
+        this._programarColapsar();
       }, 300);
     }
 
